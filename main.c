@@ -1,4 +1,4 @@
-#include "parse.h"
+#include <nscheme/parse.h>
 
 void debug_print( scm_value_t value ){
 	if ( is_integer( value )){

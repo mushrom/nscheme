@@ -1,4 +1,4 @@
-#include "parse.h"
+#include <nscheme/parse.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -129,8 +129,6 @@ scm_value_t parse_token( parse_state_t *state ){
 	}
 
 	return tag_parse_val( PARSE_TYPE_NONE );
-
-	return 0;
 }
 
 scm_value_t parse_list_tokens( parse_state_t *state ){

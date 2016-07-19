@@ -1,11 +1,11 @@
-#ifndef _PARSE_H
-#define _PARSE_H 1
-#include <stdbool.h>
-#include <stdio.h>
+#ifndef _NSCHEME_VALUES_H
+#define _NSCHEME_VALUES_H 1
+
 #include <stdint.h>
+#include <stdbool.h>
 
 /*
- *   quick summary of tagged pointers defined here:
+ *   summary of tagged pointers defined here:
  *
  *   integer | 0 0 <integer>
  *
@@ -57,25 +57,7 @@ typedef struct pair {
 	scm_value_t cdr;
 } scm_pair_t;
 
-typedef struct parse_state {
-	FILE *fp;
-
-	scm_value_t next_token;
-	bool has_next;
-
-	unsigned linenum;
-	unsigned charpos;
-} parse_state_t;
-
 typedef bool (*scm_type_test_t)(scm_value_t);
-
-// function prototypes defined in lex.c and parse.c
-scm_value_t read_next_token( parse_state_t *state );
-scm_value_t parse_list( parse_state_t *state );
-scm_value_t parse_expression( parse_state_t *state );
-
-parse_state_t *make_parse_state( FILE *fp );
-void free_parse_state( FILE *fp );
 
 // tagging functions
 static inline scm_value_t tag_integer( long int integer ){
