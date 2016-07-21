@@ -1,6 +1,7 @@
 #ifndef _PARSE_H
 #define _PARSE_H 1
 #include <nscheme/values.h>
+#include <nscheme/symbols.h>
 #include <stdbool.h>
 #include <stdio.h>
 

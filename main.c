@@ -13,6 +13,9 @@ void debug_print( scm_value_t value ){
 		debug_print( pair->cdr );
 		printf( ")" );
 
+	} else if ( is_symbol( value )){
+		printf( "%s [%p]", get_symbol( value ), get_symbol( value ));
+
 	} else if ( is_null( value )) {
 		printf( "()" );
 

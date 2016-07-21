@@ -1,11 +1,14 @@
 #include <nscheme/parse.h>
+#include <nscheme/symbols.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define WHITESPACE " \t\v\n"
 #define DIGITS     "0123456789"
 #define ALPHABET   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+#define SYMBOLS    "+-*/:?^%&@!_=|"
 
 static inline bool matches( int c, const char *str ){
 	bool ret = false;
@@ -51,7 +54,7 @@ scm_value_t read_next_token( parse_state_t *state ){
 			ungetc( c, state->fp );
 			return read_number( state );
 
-		} else if ( matches( c, ALPHABET )){
+		} else if ( matches( c, ALPHABET SYMBOLS)){
 			ungetc( c, state->fp );
 			return read_symbol( state );
 
@@ -81,5 +84,23 @@ scm_value_t read_number( parse_state_t *state ){
 }
 
 scm_value_t read_symbol( parse_state_t *state ){
-	return 0;
+	const char *ret;
+	unsigned i = 0;
+	int c = fgetc( state->fp );
+	char buf[32];
+
+	while ( matches(c, ALPHABET DIGITS SYMBOLS) && i + 1 < sizeof(buf)){
+		buf[i++] = c;
+		c = fgetc( state->fp );
+	}
+
+	buf[i] = 0;
+	ungetc( c, state->fp );
+
+	if ( !( ret = lookup_symbol_address( buf ))){
+		ret = strdup( buf );
+		store_symbol( ret );
+	}
+
+	return tag_symbol( ret );
 }

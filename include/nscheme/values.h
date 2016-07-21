@@ -11,9 +11,9 @@
  *
  *      pair | 1 0 0 <address>
  *    vector | 0 1 0 <address>
- *    string | 1 1 0 ... <address>
- *   closure | 1 0 1 ... <address>
- *    symbol | 0 1 1 ... <address>
+ *    string | 1 1 0 <address>
+ *   closure | 1 0 1 <address>
+ *    symbol | 0 1 1 <address>
  *
  *      char | 1 1 1 1 0 0 0 0 <codepoint>
  *   boolean | 1 1 1 1 0 0 1 <boolean>
@@ -72,6 +72,10 @@ static inline scm_value_t tag_pair( scm_pair_t *pair ){
 	return (scm_value_t)pair | SCM_TYPE_PAIR;
 }
 
+static inline scm_value_t tag_symbol( const char *str ){
+	return (scm_value_t)str | SCM_TYPE_SYMBOL;
+}
+
 // type testing functions
 static inline bool is_integer( scm_value_t value ){
 	return (value & SCM_MASK_INTEGER) == SCM_TYPE_INTEGER;
@@ -89,6 +93,10 @@ static inline bool is_null( scm_value_t value ){
 	return value == SCM_TYPE_NULL;
 }
 
+static inline bool is_symbol( scm_value_t value ){
+	return (value & SCM_MASK_HEAP) == SCM_TYPE_SYMBOL;
+}
+
 // data retrieving functions
 static inline long int get_integer( scm_value_t value ){
 	return value >> 2;
@@ -100,6 +108,10 @@ static inline unsigned get_parse_val( scm_value_t value ){
 
 static inline scm_pair_t *get_pair( scm_value_t value ){
 	return (scm_pair_t *)(value & ~SCM_MASK_HEAP);
+}
+
+static inline const char *get_symbol( scm_value_t value ){
+	return (const char *)(value & ~SCM_MASK_HEAP);
 }
 
 #endif
