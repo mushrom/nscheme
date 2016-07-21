@@ -1,4 +1,4 @@
-SRC = $(wildcard *.c)
+SRC = $(wildcard src/*.c)
 OBJ = $(SRC:.c=.o)
 CFLAGS = -Wall -std=c11 -I./include
 
