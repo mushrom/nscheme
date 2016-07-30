@@ -1,0 +1,22 @@
+- tail call elimination: [status: future research]
+  rather than collapse the data stack after each tail call,
+  continue to grow the data stack for each call as usual.
+  if either
+
+    a) the end of the data stack is reached during a tail call descent, or
+    b) the next call is a non-tail call,
+
+  then reset the stack pointer to where the first tail call started
+  and continue loading data there.
+
+  This can work nicely because the call stack and data stack are seperate,
+  and no new call entry is made for tail calls. The call frames hold the
+  previous (non-tail) call's stack frame pointer, which means the next stack pointer
+  can be reliably and simply determined.
+
+  - pros: no collapsing or copying has to happen, essentially a circular
+          buffer is created on the data stack with old data overwritten.
+
+  - cons: check for end of stack/non-tail call has to happen for every
+          function call. Most likely negligable since this will probably have
+	  to be done anyway to check for stack overflows.
