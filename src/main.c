@@ -1,4 +1,5 @@
 #include <nscheme/parse.h>
+#include <nscheme/vm.h>
 
 void debug_print( scm_value_t value ){
 	if ( is_integer( value )){
@@ -24,8 +25,23 @@ void debug_print( scm_value_t value ){
 	}
 }
 
+void repl( vm_t *vm, parse_state_t *input ){
+	scm_value_t temp;
+
+	while ( true ){
+		printf( " >> " );
+		temp = parse_expression( input );
+		temp = vm_evaluate_expr( vm, temp );
+
+		printf( " => " );
+		debug_print( temp );
+		printf( "\n" );
+	}
+}
+
 int main( int argc, char *argv[] ){
 	parse_state_t *foo = make_parse_state( stdin );
+	/*
 	scm_value_t temp = parse_expression( foo );
 
 	printf( "is integer? %s\n", is_integer( temp )? "true" : "false" );
@@ -34,6 +50,10 @@ int main( int argc, char *argv[] ){
 
 	debug_print( temp );
 	printf( "\n" );
+	*/
+
+	vm_t *vm = vm_init( );
+	repl( vm, foo );
 
 	return 0;
 }

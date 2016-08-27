@@ -1,6 +1,6 @@
 SRC = $(wildcard src/*.c)
 OBJ = $(SRC:.c=.o)
-CFLAGS = -Wall -O2 -std=c11 -I./include
+CFLAGS = -Wall -O2 -std=c11 -I./include -g
 
 nscheme: $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $(OBJ)

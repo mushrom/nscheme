@@ -4,6 +4,16 @@
 #include <nscheme/env.h>
 #include <stdbool.h>
 
+// TODO: implement vm_error function to handle errors properly
+//       consider supporting with-exception-handler from the start
+/*
+#define VM_ASSERT(cond, message)\
+	if (!cond) { \
+		fprintf(stderr, message); \
+		exit(1); \
+	}
+	*/
+
 struct vm;
 
 typedef bool (*vm_func)( struct vm *vm, unsigned arg );
@@ -58,7 +68,8 @@ typedef struct scm_closure {
 typedef struct vm_frame {
 	scm_closure_t *closure;
 
-	unsigned framep;
+	unsigned sp;
+	unsigned argnum;
 
 	union {
 		// similar to above, ip is used when `closure->is_compiled` is true
@@ -75,18 +86,26 @@ typedef struct vm {
 	scm_value_t *stack;
 	vm_callframe_t *calls;
 
+	// data for interpreter
+	scm_value_t ptr;
+	environment_t *env;
+
+	// data for threaded interpreter
 	unsigned ip;
 	unsigned sp;
-	unsigned framep;
 	unsigned callp;
+
+	// general
 	unsigned argnum;
 	bool running;
-
 	unsigned stack_size;
 	unsigned calls_size;
 } vm_t;
 
-vm_t *make_vm( scm_closure_t *init );
-void  free_vm( vm_t *vm );
+vm_t *vm_init( void );
+void  vm_free( vm_t *vm );
+void  vm_run( vm_t *vm );
+
+scm_value_t vm_evaluate_expr( vm_t *vm, scm_value_t expr );
 
 #endif
