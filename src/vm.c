@@ -34,7 +34,7 @@ static inline void vm_call_apply( vm_t *vm ){
 	scm_value_t func = vm->stack[vm->sp - vm->argnum];
 
 	if ( is_symbol( func )){
-		printf( "    returning from call, function: %s\n",
+		printf( "    applying function: %s\n",
 				get_symbol( func ));
 	} else {
 		printf( "    dunno what type this thing is...\n" );
@@ -92,7 +92,6 @@ static inline void vm_step_interpreter( vm_t *vm ){
 		// todo: error
 		vm->running = false;
 		vm->stack[vm->sp] = vm->ptr;
-		//puts( "wut" );
 	}
 }
 

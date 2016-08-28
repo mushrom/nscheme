@@ -22,7 +22,8 @@ typedef struct environment {
 	struct environment *last;
 } environment_t;
 
-environment_t *make_env( environment_t *last );
-
+environment_t *env_create( environment_t *last );
+void env_set( environment_t *env, unsigned type, scm_value_t key, scm_value_t value );
+env_node_t *env_find( environment_t *env, scm_value_t key );
 
 #endif
