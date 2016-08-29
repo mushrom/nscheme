@@ -1,6 +1,5 @@
 #include <nscheme/env.h>
 #include <stdlib.h>
-#include <stdio.h>
 
 environment_t *env_create( environment_t *last ){
 	environment_t *ret = calloc(1, sizeof( environment_t ));

@@ -76,6 +76,10 @@ static inline scm_value_t tag_symbol( const char *str ){
 	return (scm_value_t)str | SCM_TYPE_SYMBOL;
 }
 
+static inline scm_value_t tag_closure( void *closure ){
+	return (scm_value_t)closure | SCM_TYPE_CLOSURE;
+}
+
 // type testing functions
 static inline bool is_integer( scm_value_t value ){
 	return (value & SCM_MASK_INTEGER) == SCM_TYPE_INTEGER;
@@ -97,6 +101,10 @@ static inline bool is_symbol( scm_value_t value ){
 	return (value & SCM_MASK_HEAP) == SCM_TYPE_SYMBOL;
 }
 
+static inline bool is_closure( scm_value_t value ){
+	return (value & SCM_MASK_HEAP) == SCM_TYPE_CLOSURE;
+}
+
 // data retrieving functions
 static inline long int get_integer( scm_value_t value ){
 	return value >> 2;
@@ -112,6 +120,10 @@ static inline scm_pair_t *get_pair( scm_value_t value ){
 
 static inline const char *get_symbol( scm_value_t value ){
 	return (const char *)(value & ~SCM_MASK_HEAP);
+}
+
+static inline void *get_closure( scm_value_t value ){
+	return (void *)(value & ~SCM_MASK_HEAP);
 }
 
 #endif

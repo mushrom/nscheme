@@ -88,7 +88,6 @@ typedef struct vm {
 
 	// data for interpreter
 	scm_value_t ptr;
-	environment_t *env;
 
 	// data for threaded interpreter
 	unsigned ip;

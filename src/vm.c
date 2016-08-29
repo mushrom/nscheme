@@ -1,45 +1,10 @@
 #include <nscheme/vm.h>
+#include <nscheme/vm_ops.h>
+#include <nscheme/env.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 extern void debug_print( scm_value_t value );
-
-static inline void vm_stack_push( vm_t *vm, scm_value_t value ){
-	vm->stack[vm->sp++] = value;
-	vm->argnum++;
-}
-
-static inline void vm_call_eval( vm_t *vm, scm_value_t ptr ){
-	vm_callframe_t *frame = vm->calls + vm->callp++;
-
-	frame->closure = vm->closure;
-	frame->sp      = vm->sp;
-	frame->argnum  = vm->argnum;
-	frame->ptr     = vm->ptr;
-
-	vm->argnum = 0;
-	vm->ptr    = ptr;
-}
-
-static inline void vm_call_return( vm_t *vm ){
-	vm_callframe_t *frame = vm->calls + --vm->callp;
-
-	vm->sp      = frame->sp + 1;
-	vm->closure = frame->closure;
-	vm->argnum  = frame->argnum + 1;
-	vm->ptr     = frame->ptr;
-}
-
-static inline void vm_call_apply( vm_t *vm ){
-	scm_value_t func = vm->stack[vm->sp - vm->argnum];
-
-	if ( is_symbol( func )){
-		printf( "    applying function: %s\n",
-				get_symbol( func ));
-	} else {
-		printf( "    dunno what type this thing is...\n" );
-	}
-}
 
 static inline void vm_step_compiled( vm_t *vm ){
 	vm_op_t *code = vm->closure->code + vm->ip;
@@ -63,7 +28,19 @@ static inline void vm_step_interpreter( vm_t *vm ){
 
 		} else if ( is_symbol( pair->car )){
 			printf( "    doing symbol lookup for %s\n", get_symbol( pair->car ));
-			vm_stack_push( vm, pair->car );
+
+			env_node_t *foo = env_find( vm->closure->env, pair->car );
+
+			if ( foo ){
+				printf( "        - found as %p: ", foo );
+				debug_print( foo->value );
+				printf( "\n" );
+				vm_stack_push( vm, foo->value );
+
+			} else {
+				printf( "        - not found\n" );
+				vm_stack_push( vm, pair->car );
+			}
 
 		} else {
 			vm_stack_push( vm, pair->car );
@@ -72,20 +49,10 @@ static inline void vm_step_interpreter( vm_t *vm ){
 	} else if ( is_null( vm->ptr )){
 		vm_call_apply( vm );
 
-		if ( vm->callp > 0 ){
+		// just continue without returning if `vm_call_apply` invoked
+		// a compiled procedure
+		if ( !vm->closure->is_compiled ){
 			vm_call_return( vm );
-
-		} else {
-			puts( "    end of interpretation reached, thank you for flying nscheme" );
-			puts( "    stack dump:" );
-
-			for ( ; vm->sp; vm->sp-- ){
-				printf( "      %u: ", vm->sp - 1 );
-				debug_print( vm->stack[vm->sp - 1] );
-				printf( "\n" );
-			}
-
-			vm->running = false;
 		}
 
 	} else {
@@ -111,17 +78,15 @@ void vm_run( vm_t *vm ){
 	}
 }
 
+static scm_closure_t *root_closure = NULL;
+
 /*
- * This function assumes that the VM is in a freshly initialized state, ie.
- * nothing is currently running, all the stack pointers are zero, etc,
- * with the exception of the environment 
- *
- * Bad things will happen if this isn't true.
+ * This function assumes that the VM has stack pointers that are all zero
  */
 scm_value_t vm_evaluate_expr( vm_t *vm, scm_value_t expr ){
 	vm->ptr = expr;
 	vm->running = true;
-	vm->closure->is_compiled = false;
+	vm->closure = root_closure;
 	vm->closure->definition = expr;
 	vm->argnum = 0;
 
@@ -130,15 +95,29 @@ scm_value_t vm_evaluate_expr( vm_t *vm, scm_value_t expr ){
 	return vm->stack[0];
 }
 
+#include <nscheme/symbols.h>
+#include <string.h>
+
 vm_t *vm_init( void ){
 	vm_t *ret = calloc( 1, sizeof( vm_t ));
-	scm_closure_t *root_closure = calloc( 1, sizeof( scm_closure_t ));
+	//scm_closure_t *root_closure = calloc( 1, sizeof( scm_closure_t ));
+	root_closure = calloc( 1, sizeof( scm_closure_t ));
 
 	ret->stack_size = 0x1000;
 	ret->calls_size = 0x1000;
 	ret->stack = calloc( 1, sizeof( scm_value_t[ret->stack_size] ));
 	ret->calls = calloc( 1, sizeof( vm_callframe_t[ret->calls_size] ));
 	ret->closure = root_closure;
+	ret->closure->env = env_create( NULL );
+
+	scm_closure_t *meh = calloc( 1, sizeof( scm_closure_t ) + sizeof( vm_op_t[2] ));
+	meh->code[0].func = vm_op_add;
+	meh->code[1].func = vm_op_return;
+	meh->is_compiled = true;
+
+	scm_value_t foo  = tag_symbol( store_symbol( strdup( "+" )));
+	scm_value_t clsr = tag_closure( meh );
+	env_set( ret->closure->env, ENV_TYPE_DATA, foo, clsr );
 
 	return ret;
 }
