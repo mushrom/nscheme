@@ -3,8 +3,9 @@
 #include <nscheme/values.h>
 
 enum {
-	ENV_TYPE_SYNTAX,
+	ENV_TYPE_INTERNAL,
 	ENV_TYPE_DATA,
+	ENV_TYPE_SYNTAX,
 };
 
 typedef struct env_node {

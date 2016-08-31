@@ -19,6 +19,8 @@
  *   boolean | 1 1 1 1 0 0 1 <boolean>
  *      null | 1 1 1 1 0 1
  * parse val | 1 1 1 1 0 0 0 1 <type>
+ *   runtime | 1 1 1 1 0 0 1 1 <type>
+ *      type
  */
 
 enum parse_types {
@@ -28,6 +30,14 @@ enum parse_types {
 	PARSE_TYPE_OCTOTHORPE,
 	PARSE_TYPE_PERIOD,
 	PARSE_TYPE_EOF,
+};
+
+enum runtime_types {
+	RUN_TYPE_NONE,
+	RUN_TYPE_LAMBDA,
+	RUN_TYPE_DEFINE,
+	RUN_TYPE_DEFINE_SYNTAX,
+	RUN_TYPE_SET,
 };
 
 enum token_type { 
@@ -42,11 +52,13 @@ enum token_type {
 	SCM_TYPE_BOOLEAN   = 0x4f,
 	SCM_TYPE_NULL      = 0x2f,
 	SCM_TYPE_PARSE_VAL = 0x8f,
+	SCM_TYPE_RUN_TYPE  = 0xcf,
 
 	SCM_MASK_INTEGER   = 0x3,
 	SCM_MASK_HEAP      = 0x7,
 	SCM_MASK_CHAR      = 0xff,
 	SCM_MASK_PARSE_VAL = 0xff,
+	SCM_MASK_RUN_TYPE  = 0xff,
 	SCM_MASK_BOOLEAN   = 0x7f,
 };
 
@@ -68,6 +80,10 @@ static inline scm_value_t tag_parse_val( unsigned type ){
 	return (type << 8) | SCM_TYPE_PARSE_VAL;
 }
 
+static inline scm_value_t tag_run_type( unsigned type ){
+	return (type << 8) | SCM_TYPE_RUN_TYPE;
+}
+
 static inline scm_value_t tag_pair( scm_pair_t *pair ){
 	return (scm_value_t)pair | SCM_TYPE_PAIR;
 }
@@ -87,6 +103,10 @@ static inline bool is_integer( scm_value_t value ){
 
 static inline bool is_parse_val( scm_value_t value ){
 	return (value & SCM_MASK_PARSE_VAL) == SCM_TYPE_PARSE_VAL;
+}
+
+static inline bool is_run_type( scm_value_t value ){
+	return (value & SCM_MASK_RUN_TYPE) == SCM_TYPE_RUN_TYPE;
 }
 
 static inline bool is_pair( scm_value_t value ){
@@ -111,6 +131,10 @@ static inline long int get_integer( scm_value_t value ){
 }
 
 static inline unsigned get_parse_val( scm_value_t value ){
+	return value >> 8;
+}
+
+static inline unsigned get_run_type( scm_value_t value ){
 	return value >> 8;
 }
 

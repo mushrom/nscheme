@@ -126,9 +126,22 @@ vm_t *vm_init( void ){
 	meh->code[1].func = vm_op_return;
 	meh->is_compiled = true;
 
+	// TODO: find some place to put environment init stuff
 	scm_value_t foo  = tag_symbol( store_symbol( strdup( "+" )));
 	scm_value_t clsr = tag_closure( meh );
 	env_set( ret->env, ENV_TYPE_DATA, foo, clsr );
+
+	foo = tag_symbol( store_symbol( strdup( "lambda" )));
+	env_set( ret->env, ENV_TYPE_INTERNAL, foo, tag_run_type( RUN_TYPE_LAMBDA ));
+
+	foo = tag_symbol( store_symbol( strdup( "define" )));
+	env_set( ret->env, ENV_TYPE_INTERNAL, foo, tag_run_type( RUN_TYPE_DEFINE ));
+
+	foo = tag_symbol( store_symbol( strdup( "define-syntax" )));
+	env_set( ret->env, ENV_TYPE_INTERNAL, foo, tag_run_type( RUN_TYPE_DEFINE_SYNTAX ));
+
+	foo = tag_symbol( store_symbol( strdup( "define-syntax" )));
+	env_set( ret->env, ENV_TYPE_INTERNAL, foo, tag_run_type( RUN_TYPE_SET ));
 
 	return ret;
 }

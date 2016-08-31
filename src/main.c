@@ -26,6 +26,13 @@ void debug_print( scm_value_t value ){
 			((char *[]){"interpreted", "compiled"})[clsr->is_compiled],
 			clsr );
 
+	} else if ( is_run_type( value )){
+		const char *strs[] = {
+			"<none>", "lambda", "define", "define-syntax", "set!",
+		};
+
+		printf( "#<runtime type:%s>", strs[get_run_type( value )]);
+
 	} else {
 		printf( "#<unknown>" );
 	}
