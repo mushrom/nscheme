@@ -14,6 +14,10 @@ static inline scm_value_t vm_stack_pop( vm_t *vm ){
 	return vm->stack[--vm->sp];
 }
 
+// this routine will always be called from an interpreting context,
+// a compiled closure will call a different procedure
+//
+// TODO: insert routine compiled closures will call, for reference
 static inline void vm_call_eval( vm_t *vm, scm_value_t ptr ){
 	vm_callframe_t *frame = vm->calls + vm->callp++;
 
@@ -21,6 +25,7 @@ static inline void vm_call_eval( vm_t *vm, scm_value_t ptr ){
 	frame->sp      = vm->sp;
 	frame->argnum  = vm->argnum;
 	frame->ptr     = vm->ptr;
+	frame->env     = vm->env;
 
 	vm->argnum = 0;
 	vm->ptr    = ptr;
@@ -39,6 +44,7 @@ static inline void vm_call_return( vm_t *vm ){
 
 		} else {
 			vm->ptr = frame->ptr;
+			vm->env = frame->env;
 		}
 
 	} else {

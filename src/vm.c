@@ -29,7 +29,8 @@ static inline void vm_step_interpreter( vm_t *vm ){
 		} else if ( is_symbol( pair->car )){
 			printf( "    doing symbol lookup for %s\n", get_symbol( pair->car ));
 
-			env_node_t *foo = env_find( vm->closure->env, pair->car );
+			//env_node_t *foo = env_find( vm->closure->env, pair->car );
+			env_node_t *foo = env_find( vm->env, pair->car );
 
 			if ( foo ){
 				printf( "        - found as %p: ", foo );
@@ -98,6 +99,16 @@ scm_value_t vm_evaluate_expr( vm_t *vm, scm_value_t expr ){
 #include <nscheme/symbols.h>
 #include <string.h>
 
+static environment_t *vm_r7rs_environment( void ){
+	static environment_t *ret = NULL;
+
+	if ( !ret ){
+		ret = env_create( NULL );
+	}
+
+	return ret;
+}
+
 vm_t *vm_init( void ){
 	vm_t *ret = calloc( 1, sizeof( vm_t ));
 	//scm_closure_t *root_closure = calloc( 1, sizeof( scm_closure_t ));
@@ -108,7 +119,7 @@ vm_t *vm_init( void ){
 	ret->stack = calloc( 1, sizeof( scm_value_t[ret->stack_size] ));
 	ret->calls = calloc( 1, sizeof( vm_callframe_t[ret->calls_size] ));
 	ret->closure = root_closure;
-	ret->closure->env = env_create( NULL );
+	ret->env = vm_r7rs_environment( );
 
 	scm_closure_t *meh = calloc( 1, sizeof( scm_closure_t ) + sizeof( vm_op_t[2] ));
 	meh->code[0].func = vm_op_add;
@@ -117,7 +128,7 @@ vm_t *vm_init( void ){
 
 	scm_value_t foo  = tag_symbol( store_symbol( strdup( "+" )));
 	scm_value_t clsr = tag_closure( meh );
-	env_set( ret->closure->env, ENV_TYPE_DATA, foo, clsr );
+	env_set( ret->env, ENV_TYPE_DATA, foo, clsr );
 
 	return ret;
 }

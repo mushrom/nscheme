@@ -76,7 +76,10 @@ typedef struct vm_frame {
 		unsigned ip;
 		// and `ptr` is used when the tree walker is used, to keep track
 		// of the next token to evaluate
-		scm_value_t ptr;
+		struct {
+			scm_value_t ptr;
+			environment_t *env;
+		};
 	};
 } vm_callframe_t;
 
@@ -87,6 +90,7 @@ typedef struct vm {
 	vm_callframe_t *calls;
 
 	// data for interpreter
+	environment_t *env;
 	scm_value_t ptr;
 
 	// data for threaded interpreter
