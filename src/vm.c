@@ -62,14 +62,6 @@ static void vm_handle_sform( vm_t *vm, scm_value_t form, scm_value_t expr ){
 					scm_value_t body = pair->cdr;
 					scm_closure_t *tmp = vm_make_closure( args, body, vm->env );
 
-					printf( "    - args: " );
-					debug_print( args );
-					printf( "\n" );
-
-					printf( "    - body: " );
-					debug_print( body );
-					printf( "\n" );
-
 					vm_stack_push( vm, tag_closure( tmp ));
 					vm_call_return( vm );
 
@@ -114,10 +106,6 @@ static void vm_handle_sform( vm_t *vm, scm_value_t form, scm_value_t expr ){
 
 static inline void vm_step_interpreter( vm_t *vm ){
 	if ( is_pair( vm->ptr )){
-		printf( "    got pair: " );
-		debug_print( vm->ptr );
-		printf( "\n" );
-
 		scm_pair_t *pair = get_pair( vm->ptr );
 
 		vm->ptr = pair->cdr;
@@ -127,12 +115,12 @@ static inline void vm_step_interpreter( vm_t *vm ){
 			vm_call_eval( vm, pair->car );
 
 		} else if ( is_symbol( pair->car )){
-			printf( "    doing symbol lookup for %s\n", get_symbol( pair->car ));
+			printf( "    doing symbol lookup for '%s'... ", get_symbol( pair->car ));
 
 			env_node_t *foo = env_find( vm->env, pair->car );
 
 			if ( foo ){
-				printf( "        - found as %p: ", foo );
+				printf( "found, " );
 				debug_print( foo->value );
 				printf( "\n" );
 
@@ -144,7 +132,7 @@ static inline void vm_step_interpreter( vm_t *vm ){
 				}
 
 			} else {
-				printf( "        - not found\n" );
+				printf( "not found\n" );
 				vm_stack_push( vm, pair->car );
 			}
 
@@ -154,14 +142,6 @@ static inline void vm_step_interpreter( vm_t *vm ){
 
 	} else if ( is_null( vm->ptr )){
 		vm_call_apply( vm );
-
-		// just continue without returning if `vm_call_apply` invoked
-		// a compiled procedure
-		/*
-		if ( !vm->closure->is_compiled ){
-			vm_call_return( vm );
-		}
-		*/
 
 	} else {
 		// todo: error

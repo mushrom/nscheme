@@ -54,9 +54,9 @@ void vm_call_apply( vm_t *vm ){
 
 	if ( is_closure( func )){
 		scm_closure_t *clsr = get_closure( func );
-		printf( "    applying closure: %p\n", clsr );
-		printf( "      - is %s\n",
-			((char *[]){"interpreted", "compiled"})[clsr->is_compiled]);
+		printf( "    applying %s closure: %p\n",
+			((char *[]){"interpreted", "compiled"})[clsr->is_compiled],
+			clsr );
 
 		vm->closure = clsr;
 
@@ -64,11 +64,6 @@ void vm_call_apply( vm_t *vm ){
 			vm->ip = 0;
 
 		} else {
-			puts( "    doing things to evaluate interpreted lambda" );
-			printf(
-				"       - closure already called %u times\n",
-				clsr->num_calls );
-
 			unsigned called_args = vm->argnum;
 
 			vm->env = env_create( vm->env );
@@ -105,7 +100,7 @@ bool vm_op_return_last( vm_t *vm, unsigned arg ){
 bool vm_op_add( vm_t *vm, unsigned arg ){
 	scm_value_t sum = 0;
 
-	puts( "got here" );
+	printf( "    did stuff at %s\n", __func__ );
 
 	for ( unsigned args = vm->argnum - 1; args; args-- ){
 		// no untagging/retagging needed because the lower bits
