@@ -117,9 +117,60 @@ bool vm_op_add( vm_t *vm, unsigned arg ){
 	return true;
 }
 
-bool vm_op_sub( vm_t *vm, unsigned arg );
-bool vm_op_mul( vm_t *vm, unsigned arg );
-bool vm_op_div( vm_t *vm, unsigned arg );
+bool vm_op_sub( vm_t *vm, unsigned arg ){
+	scm_value_t sum = vm->stack[vm->sp - vm->argnum + 1];
+
+	printf( "    did stuff at %s\n", __func__ );
+
+	for ( unsigned args = vm->argnum - 2; args; args-- ){
+		sum -= vm_stack_pop( vm );
+	}
+
+	vm_stack_pop( vm );
+	vm_stack_pop( vm );
+	vm_stack_push( vm, sum );
+
+	return true;
+}
+
+bool vm_op_mul( vm_t *vm, unsigned arg ){
+	uintptr_t sum = 1;
+
+	printf( "    did stuff at %s\n", __func__ );
+
+	for ( unsigned args = vm->argnum - 1; args; args-- ){
+		sum *= get_integer( vm_stack_pop( vm ));
+	}
+
+	vm_stack_pop( vm );
+	vm_stack_push( vm, tag_integer( sum ));
+
+	return true;
+}
+
+bool vm_op_div( vm_t *vm, unsigned arg ){
+	uintptr_t sum = vm->stack[vm->sp - vm->argnum + 1];
+
+	printf( "    did stuff at %s\n", __func__ );
+
+	for ( unsigned args = vm->argnum - 2; args; args-- ){
+		uintptr_t temp = vm_stack_pop( vm );
+
+		if ( temp ){
+			sum /= temp;
+
+		} else {
+			puts(    "divide by zero! TODO: error" );
+
+		}
+	}
+
+	vm_stack_pop( vm );
+	vm_stack_pop( vm );
+	vm_stack_push( vm, tag_integer( sum ));
+
+	return true;
+}
 
 bool vm_op_jump( vm_t *vm, unsigned arg );
 bool vm_op_lessthan( vm_t *vm, unsigned arg );

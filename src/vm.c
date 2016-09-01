@@ -197,6 +197,18 @@ scm_value_t vm_evaluate_expr( vm_t *vm, scm_value_t expr ){
 #include <nscheme/symbols.h>
 #include <string.h>
 
+static void vm_add_arithmetic_op( vm_t *vm, char *name, vm_func func ){
+	scm_closure_t *meh = calloc( 1, sizeof( scm_closure_t ) + sizeof( vm_op_t[2] ));
+	meh->code[0].func = func;
+	meh->code[1].func = vm_op_return;
+	meh->is_compiled = true;
+
+	// TODO: find some place to put environment init stuff
+	scm_value_t foo  = tag_symbol( store_symbol( strdup( name )));
+	scm_value_t clsr = tag_closure( meh );
+	env_set( vm->env, ENV_TYPE_DATA, foo, clsr );
+}
+
 vm_t *vm_init( void ){
 	vm_t *ret = calloc( 1, sizeof( vm_t ));
 	//scm_closure_t *root_closure = calloc( 1, sizeof( scm_closure_t ));
@@ -209,15 +221,14 @@ vm_t *vm_init( void ){
 	ret->closure = root_closure;
 	ret->env = vm_r7rs_environment( );
 
-	scm_closure_t *meh = calloc( 1, sizeof( scm_closure_t ) + sizeof( vm_op_t[2] ));
-	meh->code[0].func = vm_op_add;
-	meh->code[1].func = vm_op_return;
-	meh->is_compiled = true;
-
 	// TODO: find some place to put environment init stuff
-	scm_value_t foo  = tag_symbol( store_symbol( strdup( "+" )));
-	scm_value_t clsr = tag_closure( meh );
-	env_set( ret->env, ENV_TYPE_DATA, foo, clsr );
+
+	vm_add_arithmetic_op( ret, "+", vm_op_add );
+	vm_add_arithmetic_op( ret, "-", vm_op_sub );
+	vm_add_arithmetic_op( ret, "*", vm_op_mul );
+	vm_add_arithmetic_op( ret, "/", vm_op_div );
+
+	scm_value_t foo;
 
 	foo = tag_symbol( store_symbol( strdup( "lambda" )));
 	env_set( ret->env, ENV_TYPE_INTERNAL, foo, tag_run_type( RUN_TYPE_LAMBDA ));
