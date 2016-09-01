@@ -148,7 +148,8 @@ scm_value_t parse_list( parse_state_t *state ){
 
 	parse_expect( state, is_left_paren, "left parenthesis" );
 
-	if ( is_right_paren( peek_next_token( state ))){
+	//if ( is_right_paren( peek_next_token( state ))){
+	if ( !is_none_type( parse_accept( state, is_right_paren ))){
 		temp = SCM_TYPE_NULL;
 
 	} else {

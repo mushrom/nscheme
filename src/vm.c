@@ -40,6 +40,11 @@ static bool is_special_form( scm_value_t value ){
 	return ret;
 }
 
+static bool is_valid_lambda( scm_pair_t *pair ){
+	return (is_pair( pair->car ) || is_null( pair->car ))
+		&& is_pair( pair->cdr );
+}
+
 static void vm_handle_sform( vm_t *vm, scm_value_t form, scm_value_t expr ){
 	unsigned type = get_run_type( form );
 
@@ -52,7 +57,7 @@ static void vm_handle_sform( vm_t *vm, scm_value_t form, scm_value_t expr ){
 
 				scm_pair_t *pair = get_pair( expr );
 
-				if ( is_pair( pair->car ) && is_pair( pair->cdr )){
+				if ( is_valid_lambda( pair )){
 					scm_value_t args = pair->car;
 					scm_value_t body = pair->cdr;
 					scm_closure_t *tmp = vm_make_closure( args, body, vm->env );

@@ -53,37 +53,9 @@ static inline void vm_call_return( vm_t *vm ){
 	}
 }
 
-static inline void vm_call_apply( vm_t *vm ){
-	scm_value_t func = vm->stack[vm->sp - vm->argnum];
-
-	if ( is_closure( func )){
-		scm_closure_t *clsr = get_closure( func );
-		printf( "    applying closure: %p\n", clsr );
-		printf( "      - is %s\n",
-			((char *[]){"interpreted", "compiled"})[clsr->is_compiled]);
-
-		vm->closure = clsr;
-
-		if ( clsr->is_compiled ){
-			vm->ip = 0;
-
-		} else {
-			puts( "    doing things to evaluate interpreted lambda" );
-			vm->env = env_create( vm->env );
-			vm->ptr = clsr->definition;
-			vm->sp -= vm->argnum;
-			vm->argnum = 0;
-		}
-
-	} else {
-		printf( "    dunno how to apply " );
-		debug_print( func );
-		printf( "\n" );
-		vm->running = false;
-	}
-}
-
+void vm_call_apply( vm_t *vm );
 bool vm_op_return( vm_t *vm, unsigned arg );
+bool vm_op_return_last( vm_t *vm, unsigned arg );
 
 bool vm_op_add( vm_t *vm, unsigned arg );
 bool vm_op_sub( vm_t *vm, unsigned arg );
