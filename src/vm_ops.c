@@ -17,6 +17,20 @@ static scm_value_t vm_func_return_last( void ){
 	return tag_closure( ret );
 }
 
+scm_value_t vm_func_intern_set( void ){
+	static scm_closure_t *ret = NULL;
+
+	if ( !ret ){
+		ret = calloc( 1, sizeof( scm_closure_t ) + sizeof( vm_op_t[2] ));
+
+		ret->is_compiled = true;
+		ret->code[0].func = vm_op_intern_set;
+		ret->code[1].func = vm_op_return;
+	}
+
+	return tag_closure( ret );
+}
+
 static void vm_load_lambda_args( vm_t *vm, unsigned argnum, scm_value_t args ){
 	scm_value_t arg = args;
 	unsigned i = 1;
@@ -116,3 +130,22 @@ bool vm_op_jump( vm_t *vm, unsigned arg );
 bool vm_op_lessthan( vm_t *vm, unsigned arg );
 bool vm_op_equal( vm_t *vm, unsigned arg );
 bool vm_op_greaterthan( vm_t *vm, unsigned arg );
+
+bool vm_op_intern_set( vm_t *vm, unsigned arg ){
+	if ( vm->argnum != 3 ){
+		puts( "not enough args man" );
+		return true;
+	}
+
+	scm_value_t datum = vm_stack_pop( vm );
+	scm_value_t sym   = vm_stack_pop( vm );
+
+	if ( !is_symbol( sym )){
+		puts( "expected symbol" );
+		return true;
+	}
+
+	env_set( vm->env, ENV_TYPE_DATA, sym, datum );
+
+	return true;
+}

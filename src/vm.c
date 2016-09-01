@@ -80,6 +80,32 @@ static void vm_handle_sform( vm_t *vm, scm_value_t form, scm_value_t expr ){
 
 			break;
 
+		case RUN_TYPE_DEFINE:
+			if ( !is_pair( expr )){
+				puts( "error in define!" );
+			}
+
+			scm_pair_t *pair = get_pair( expr );
+
+			vm_stack_push( vm, vm_func_intern_set( ));
+
+			if ( is_symbol( pair->car )){
+				vm_stack_push( vm, pair->car );
+				vm->ptr = pair->cdr;
+
+			} else if ( is_pair( pair->car )){
+				scm_pair_t *temp = get_pair( pair->car );
+				scm_closure_t *clsr =
+					vm_make_closure( temp->cdr, pair->cdr, vm->env );
+
+				vm_stack_push( vm, temp->car );
+				vm_stack_push( vm, tag_closure( clsr ));
+
+				vm->ptr = SCM_TYPE_NULL;
+			}
+
+			break;
+
 		default:
 			printf( "unknown type in special form evaluation\n" );
 			break;
