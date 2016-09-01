@@ -59,12 +59,27 @@ static inline void vm_call_apply( vm_t *vm ){
 	if ( is_closure( func )){
 		scm_closure_t *clsr = get_closure( func );
 		printf( "    applying closure: %p\n", clsr );
+		printf( "      - is %s\n",
+			((char *[]){"interpreted", "compiled"})[clsr->is_compiled]);
 
 		vm->closure = clsr;
-		vm->ip = 0;
+
+		if ( clsr->is_compiled ){
+			vm->ip = 0;
+
+		} else {
+			puts( "    doing things to evaluate interpreted lambda" );
+			vm->env = env_create( vm->env );
+			vm->ptr = clsr->definition;
+			vm->sp -= vm->argnum;
+			vm->argnum = 0;
+		}
 
 	} else {
-		printf( "    dunno what type this thing is...\n" );
+		printf( "    dunno how to apply " );
+		debug_print( func );
+		printf( "\n" );
+		vm->running = false;
 	}
 }
 

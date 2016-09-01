@@ -59,6 +59,7 @@ typedef struct scm_closure {
 		// this one is used otherwise
 		struct {
 			environment_t *env;
+			scm_value_t args;
 		};
 	};
 

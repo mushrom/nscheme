@@ -12,6 +12,75 @@ static inline void vm_step_compiled( vm_t *vm ){
 	vm->ip += code->func( vm, code->arg );
 }
 
+static scm_closure_t *vm_make_closure( scm_value_t args,
+                                       scm_value_t body,
+                                       environment_t *env )
+{
+	scm_closure_t *ret = calloc( 1, sizeof( scm_closure_t ));
+
+	ret->definition  = body;
+	ret->args        = args;
+	ret->is_compiled = false;
+
+	return ret;
+}
+
+static bool is_special_form( scm_value_t value ){
+	bool ret = false;
+
+	if ( is_run_type( value )){
+		unsigned type = get_run_type( value );
+
+		ret = type == RUN_TYPE_LAMBDA
+		   || type == RUN_TYPE_DEFINE
+		   || type == RUN_TYPE_DEFINE_SYNTAX
+		   || type == RUN_TYPE_SET;
+	}
+
+	return ret;
+}
+
+static void vm_handle_sform( vm_t *vm, scm_value_t form, scm_value_t expr ){
+	unsigned type = get_run_type( form );
+
+	switch ( type ){
+		case RUN_TYPE_LAMBDA:
+			{
+				if ( !is_pair( expr )){
+					puts( "errrrorr! in lambda expansion" );
+				}
+
+				scm_pair_t *pair = get_pair( expr );
+
+				if ( is_pair( pair->car ) && is_pair( pair->cdr )){
+					scm_value_t args = pair->car;
+					scm_value_t body = pair->cdr;
+					scm_closure_t *tmp = vm_make_closure( args, body, vm->env );
+
+					printf( "    - args: " );
+					debug_print( args );
+					printf( "\n" );
+
+					printf( "    - body: " );
+					debug_print( body );
+					printf( "\n" );
+
+					vm_stack_push( vm, tag_closure( tmp ));
+					vm_call_return( vm );
+
+				} else {
+					puts( "an error! TODO: better error reporting" );
+				}
+			}
+
+			break;
+
+		default:
+			printf( "unknown type in special form evaluation\n" );
+			break;
+	}
+}
+
 static inline void vm_step_interpreter( vm_t *vm ){
 	if ( is_pair( vm->ptr )){
 		printf( "    got pair: " );
@@ -29,14 +98,19 @@ static inline void vm_step_interpreter( vm_t *vm ){
 		} else if ( is_symbol( pair->car )){
 			printf( "    doing symbol lookup for %s\n", get_symbol( pair->car ));
 
-			//env_node_t *foo = env_find( vm->closure->env, pair->car );
 			env_node_t *foo = env_find( vm->env, pair->car );
 
 			if ( foo ){
 				printf( "        - found as %p: ", foo );
 				debug_print( foo->value );
 				printf( "\n" );
-				vm_stack_push( vm, foo->value );
+
+				if ( is_special_form( foo->value )){
+					vm_handle_sform( vm, foo->value, pair->cdr );
+
+				} else {
+					vm_stack_push( vm, foo->value );
+				}
 
 			} else {
 				printf( "        - not found\n" );
@@ -52,9 +126,11 @@ static inline void vm_step_interpreter( vm_t *vm ){
 
 		// just continue without returning if `vm_call_apply` invoked
 		// a compiled procedure
+		/*
 		if ( !vm->closure->is_compiled ){
 			vm_call_return( vm );
 		}
+		*/
 
 	} else {
 		// todo: error
@@ -81,24 +157,6 @@ void vm_run( vm_t *vm ){
 
 static scm_closure_t *root_closure = NULL;
 
-/*
- * This function assumes that the VM has stack pointers that are all zero
- */
-scm_value_t vm_evaluate_expr( vm_t *vm, scm_value_t expr ){
-	vm->ptr = expr;
-	vm->running = true;
-	vm->closure = root_closure;
-	vm->closure->definition = expr;
-	vm->argnum = 0;
-
-	vm_run( vm );
-
-	return vm->stack[0];
-}
-
-#include <nscheme/symbols.h>
-#include <string.h>
-
 static environment_t *vm_r7rs_environment( void ){
 	static environment_t *ret = NULL;
 
@@ -108,6 +166,25 @@ static environment_t *vm_r7rs_environment( void ){
 
 	return ret;
 }
+
+/*
+ * This function assumes that the VM has stack pointers that are all zero
+ */
+scm_value_t vm_evaluate_expr( vm_t *vm, scm_value_t expr ){
+	vm->ptr = expr;
+	vm->running = true;
+	vm->closure = root_closure;
+	vm->closure->definition = expr;
+	vm->argnum = 0;
+	vm->env = vm_r7rs_environment( );
+
+	vm_run( vm );
+
+	return vm->stack[0];
+}
+
+#include <nscheme/symbols.h>
+#include <string.h>
 
 vm_t *vm_init( void ){
 	vm_t *ret = calloc( 1, sizeof( vm_t ));
@@ -140,7 +217,7 @@ vm_t *vm_init( void ){
 	foo = tag_symbol( store_symbol( strdup( "define-syntax" )));
 	env_set( ret->env, ENV_TYPE_INTERNAL, foo, tag_run_type( RUN_TYPE_DEFINE_SYNTAX ));
 
-	foo = tag_symbol( store_symbol( strdup( "define-syntax" )));
+	foo = tag_symbol( store_symbol( strdup( "set!" )));
 	env_set( ret->env, ENV_TYPE_INTERNAL, foo, tag_run_type( RUN_TYPE_SET ));
 
 	return ret;

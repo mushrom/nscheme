@@ -39,10 +39,16 @@ void env_set( environment_t *env, unsigned type, scm_value_t key, scm_value_t va
 }
 
 env_node_t *env_find( environment_t *env, scm_value_t key ){
-	env_node_t *ret = env->root;
+	env_node_t *ret = NULL;
 
-	while ( ret && key != ret->key ){
-		ret = (key < ret->key)? ret->left : ret->right;
+	while ( env && !ret ){
+		ret = env->root;
+
+		while ( ret && key != ret->key ){
+			ret = (key < ret->key)? ret->left : ret->right;
+		}
+
+		env = env->last;
 	}
 
 	return ret;
