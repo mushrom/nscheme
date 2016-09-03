@@ -202,6 +202,61 @@ bool vm_op_div( vm_t *vm, unsigned arg ){
 	return true;
 }
 
+bool vm_op_cons( vm_t *vm, unsigned arg ){
+	if ( vm->argnum != 3 ){
+		puts( "not enough args man" );
+		return true;
+	}
+
+	scm_value_t cdr = vm_stack_pop( vm );
+	scm_value_t car = vm_stack_pop( vm );
+
+	vm_stack_pop( vm );
+	vm_stack_push( vm, construct_pair( car, cdr ));
+
+	return true;
+}
+
+bool vm_op_car( vm_t *vm, unsigned arg ){
+	if ( vm->argnum != 2 ){
+		puts( "cargs" );
+		return true;
+	}
+
+	scm_value_t value = vm_stack_pop( vm );
+	vm_stack_pop( vm );
+
+	if ( !is_pair( value )){
+		puts( "car does not abide, man" );
+		return true;
+	}
+
+	scm_pair_t *pair = get_pair( value );
+	vm_stack_push( vm, pair->car );
+
+	return true;
+}
+
+bool vm_op_cdr( vm_t *vm, unsigned arg ){
+	if ( vm->argnum != 2 ){
+		puts( "cdargs" );
+		return true;
+	}
+
+	scm_value_t value = vm_stack_pop( vm );
+	vm_stack_pop( vm );
+
+	if ( !is_pair( value )){
+		puts( "cdr does not abide, man" );
+		return true;
+	}
+
+	scm_pair_t *pair = get_pair( value );
+	vm_stack_push( vm, pair->cdr );
+
+	return true;
+}
+
 bool vm_op_jump( vm_t *vm, unsigned arg );
 
 bool vm_op_lessthan( vm_t *vm, unsigned arg ){

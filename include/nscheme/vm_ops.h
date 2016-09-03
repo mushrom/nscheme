@@ -67,6 +67,10 @@ bool vm_op_sub( vm_t *vm, unsigned arg );
 bool vm_op_mul( vm_t *vm, unsigned arg );
 bool vm_op_div( vm_t *vm, unsigned arg );
 
+bool vm_op_cons( vm_t *vm, unsigned arg );
+bool vm_op_car( vm_t *vm, unsigned arg );
+bool vm_op_cdr( vm_t *vm, unsigned arg );
+
 bool vm_op_jump( vm_t *vm, unsigned arg );
 bool vm_op_lessthan( vm_t *vm, unsigned arg );
 bool vm_op_equal( vm_t *vm, unsigned arg );
