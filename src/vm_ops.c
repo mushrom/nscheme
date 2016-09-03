@@ -80,7 +80,7 @@ void vm_call_apply( vm_t *vm ){
 		} else {
 			unsigned called_args = vm->argnum;
 
-			vm->env = env_create( vm->env );
+			vm->env = env_create( clsr->env );
 			vm->ptr = clsr->definition;
 			vm->sp -= vm->argnum;
 			vm->argnum = 0;

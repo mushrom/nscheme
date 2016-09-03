@@ -20,6 +20,7 @@ static scm_closure_t *vm_make_closure( scm_value_t args,
 
 	ret->definition  = body;
 	ret->args        = args;
+	ret->env         = env;
 	ret->is_compiled = false;
 
 	return ret;
