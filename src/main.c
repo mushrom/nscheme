@@ -5,6 +5,9 @@ void debug_print( scm_value_t value ){
 	if ( is_integer( value )){
 		printf( "%lu", get_integer( value ));
 
+	} else if ( is_boolean( value )){
+		printf( "#%c", get_boolean( value )? 't' : 'f' );
+
 	} else if ( is_pair( value )) {
 		scm_pair_t *pair = get_pair( value );
 
@@ -29,6 +32,7 @@ void debug_print( scm_value_t value ){
 	} else if ( is_run_type( value )){
 		const char *strs[] = {
 			"<none>", "lambda", "define", "define-syntax", "set!",
+			"if",
 		};
 
 		printf( "#<runtime type:%s>", strs[get_run_type( value )]);

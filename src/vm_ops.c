@@ -187,9 +187,51 @@ bool vm_op_div( vm_t *vm, unsigned arg ){
 }
 
 bool vm_op_jump( vm_t *vm, unsigned arg );
-bool vm_op_lessthan( vm_t *vm, unsigned arg );
-bool vm_op_equal( vm_t *vm, unsigned arg );
-bool vm_op_greaterthan( vm_t *vm, unsigned arg );
+
+bool vm_op_lessthan( vm_t *vm, unsigned arg ){
+	if ( vm->argnum != 3 ){
+		puts( "not enough args man" );
+		return true;
+	}
+
+	scm_value_t op1 = vm_stack_pop( vm );
+	scm_value_t op2 = vm_stack_pop( vm );
+
+	vm_stack_pop( vm );
+	vm_stack_push( vm, tag_boolean( op2 < op1 ));
+
+	return true;
+}
+
+bool vm_op_equal( vm_t *vm, unsigned arg ){
+	if ( vm->argnum != 3 ){
+		puts( "not enough args man" );
+		return true;
+	}
+
+	scm_value_t op1 = vm_stack_pop( vm );
+	scm_value_t op2 = vm_stack_pop( vm );
+
+	vm_stack_pop( vm );
+	vm_stack_push( vm, tag_boolean( op2 == op1 ));
+
+	return true;
+}
+
+bool vm_op_greaterthan( vm_t *vm, unsigned arg ){
+	if ( vm->argnum != 3 ){
+		puts( "not enough args man" );
+		return true;
+	}
+
+	scm_value_t op1 = vm_stack_pop( vm );
+	scm_value_t op2 = vm_stack_pop( vm );
+
+	vm_stack_pop( vm );
+	vm_stack_push( vm, tag_boolean( op2 > op1 ));
+
+	return true;
+}
 
 bool vm_op_intern_define( vm_t *vm, unsigned arg ){
 	if ( vm->argnum != 3 ){

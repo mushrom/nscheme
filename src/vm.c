@@ -234,6 +234,10 @@ vm_t *vm_init( void ){
 	vm_add_arithmetic_op( ret, "*", vm_op_mul );
 	vm_add_arithmetic_op( ret, "/", vm_op_div );
 
+	vm_add_arithmetic_op( ret, "eq?", vm_op_equal );
+	vm_add_arithmetic_op( ret, "<", vm_op_lessthan );
+	vm_add_arithmetic_op( ret, ">", vm_op_greaterthan );
+
 	scm_value_t foo;
 
 	foo = tag_symbol( store_symbol( strdup( "lambda" )));
@@ -247,6 +251,9 @@ vm_t *vm_init( void ){
 
 	foo = tag_symbol( store_symbol( strdup( "set!" )));
 	env_set( ret->env, foo, tag_run_type( RUN_TYPE_SET ));
+
+	foo = tag_symbol( store_symbol( strdup( "if" )));
+	env_set( ret->env, foo, tag_run_type( RUN_TYPE_IF ));
 
 	return ret;
 }

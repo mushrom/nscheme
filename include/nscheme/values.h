@@ -16,7 +16,7 @@
  *    symbol | 0 1 1 <address>
  *
  *      char | 1 1 1 1 0 0 0 0 <codepoint>
- *   boolean | 1 1 1 1 0 0 1 <boolean>
+ *   boolean | 1 1 1 1 0 0 1 0 <boolean>
  *      null | 1 1 1 1 0 1
  * parse val | 1 1 1 1 0 0 0 1 <type>
  *   runtime | 1 1 1 1 0 0 1 1 <type>
@@ -38,6 +38,7 @@ enum runtime_types {
 	RUN_TYPE_DEFINE,
 	RUN_TYPE_DEFINE_SYNTAX,
 	RUN_TYPE_SET,
+	RUN_TYPE_IF,
 };
 
 enum token_type { 
@@ -59,7 +60,7 @@ enum token_type {
 	SCM_MASK_CHAR      = 0xff,
 	SCM_MASK_PARSE_VAL = 0xff,
 	SCM_MASK_RUN_TYPE  = 0xff,
-	SCM_MASK_BOOLEAN   = 0x7f,
+	SCM_MASK_BOOLEAN   = 0xff,
 };
 
 typedef uintptr_t scm_value_t;
@@ -96,6 +97,10 @@ static inline scm_value_t tag_closure( void *closure ){
 	return (scm_value_t)closure | SCM_TYPE_CLOSURE;
 }
 
+static inline scm_value_t tag_boolean( bool boolean ){
+	return (boolean << 8) | SCM_TYPE_BOOLEAN;
+}
+
 // type testing functions
 static inline bool is_integer( scm_value_t value ){
 	return (value & SCM_MASK_INTEGER) == SCM_TYPE_INTEGER;
@@ -130,6 +135,10 @@ static inline bool is_eof( scm_value_t value ){
 		&& (value >> 8) == PARSE_TYPE_EOF;
 }
 
+static inline bool is_boolean( scm_value_t value ){
+	return (value & SCM_MASK_BOOLEAN) == SCM_TYPE_BOOLEAN;
+}
+
 // data retrieving functions
 static inline long int get_integer( scm_value_t value ){
 	return value >> 2;
@@ -153,6 +162,10 @@ static inline const char *get_symbol( scm_value_t value ){
 
 static inline void *get_closure( scm_value_t value ){
 	return (void *)(value & ~SCM_MASK_HEAP);
+}
+
+static inline bool get_boolean( scm_value_t value ){
+	return value >> 8;
 }
 
 #endif

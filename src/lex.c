@@ -8,7 +8,7 @@
 #define WHITESPACE " \t\v\n"
 #define DIGITS     "0123456789"
 #define ALPHABET   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-#define SYMBOLS    "+-*/:?^%&@!_=|"
+#define SYMBOLS    "<>+-*/:?^%&@!_=|"
 
 static inline bool matches( int c, const char *str ){
 	bool ret = false;
