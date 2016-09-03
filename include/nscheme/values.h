@@ -125,6 +125,11 @@ static inline bool is_closure( scm_value_t value ){
 	return (value & SCM_MASK_HEAP) == SCM_TYPE_CLOSURE;
 }
 
+static inline bool is_eof( scm_value_t value ){
+	return is_parse_val( value )
+		&& (value >> 8) == PARSE_TYPE_EOF;
+}
+
 // data retrieving functions
 static inline long int get_integer( scm_value_t value ){
 	return value >> 2;

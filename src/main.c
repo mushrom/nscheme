@@ -39,16 +39,19 @@ void debug_print( scm_value_t value ){
 }
 
 void repl( vm_t *vm, parse_state_t *input ){
-	scm_value_t temp;
+	scm_value_t temp = 0;
 
-	while ( true ){
+	while ( !is_eof( temp )){
 		printf( " >> " );
+		fflush( stdout );
+
 		temp = parse_expression( input );
 		temp = vm_evaluate_expr( vm, temp );
 
 		printf( " => " );
 		debug_print( temp );
 		printf( "\n" );
+		fflush( stdout );
 	}
 }
 
