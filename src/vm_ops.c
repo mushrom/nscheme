@@ -45,6 +45,20 @@ scm_value_t vm_func_intern_set( void ){
 	return tag_closure( ret );
 }
 
+scm_value_t vm_func_intern_if( void ){
+	static scm_closure_t *ret = NULL;
+
+	if ( !ret ){
+		ret = calloc( 1, sizeof( scm_closure_t ) + sizeof( vm_op_t[2] ));
+
+		ret->is_compiled = true;
+		ret->code[0].func = vm_op_intern_if;
+		ret->code[1].func = vm_op_return;
+	}
+
+	return tag_closure( ret );
+}
+
 static void vm_load_lambda_args( vm_t *vm, unsigned argnum, scm_value_t args ){
 	scm_value_t arg = args;
 	unsigned i = 1;
@@ -267,6 +281,28 @@ bool vm_op_intern_set( vm_t *vm, unsigned arg ){
 	}
 
 	env_set_recurse( vm->env, sym, datum );
+
+	return true;
+}
+
+bool vm_op_intern_if( vm_t *vm, unsigned arg ){
+	if ( vm->argnum != 4 ){
+		puts( "not enough args man" );
+		return true;
+	}
+
+	scm_value_t test       = vm_stack_pop( vm );
+	scm_value_t false_path = vm_stack_pop( vm );
+	scm_value_t true_path  = vm_stack_pop( vm );
+
+	vm_stack_pop( vm );
+
+	if ( test == tag_boolean( false )) {
+		vm_stack_push( vm, false_path );
+
+	} else {
+		vm_stack_push( vm, true_path );
+	}
 
 	return true;
 }

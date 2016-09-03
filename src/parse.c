@@ -109,16 +109,6 @@ static inline bool is_none_type( scm_value_t value ){
 		&& get_parse_val( value ) == PARSE_TYPE_NONE;
 }
 
-// TODO: move this somewhere else eventually, doesn't fit in the parser code
-static scm_value_t construct_pair( scm_value_t car, scm_value_t cdr ){
-	scm_pair_t *pair = calloc( 1, sizeof( scm_pair_t ));
-
-	pair->car = car;
-	pair->cdr = cdr;
-
-	return tag_pair( pair );
-}
-
 scm_value_t parse_list( parse_state_t *state );
 
 scm_value_t parse_token( parse_state_t *state ){

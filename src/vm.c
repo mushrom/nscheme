@@ -18,6 +18,14 @@ static scm_closure_t *vm_make_closure( scm_value_t args,
 {
 	scm_closure_t *ret = calloc( 1, sizeof( scm_closure_t ));
 
+	printf( "    closure args: " );
+	debug_print( args );
+	printf( "\n" );
+
+	printf( "    closure body: " );
+	debug_print( body );
+	printf( "\n" );
+
 	ret->definition  = body;
 	ret->args        = args;
 	ret->env         = env;
@@ -35,7 +43,9 @@ static bool is_special_form( scm_value_t value ){
 		ret = type == RUN_TYPE_LAMBDA
 		   || type == RUN_TYPE_DEFINE
 		   || type == RUN_TYPE_DEFINE_SYNTAX
-		   || type == RUN_TYPE_SET;
+		   || type == RUN_TYPE_SET
+		   || type == RUN_TYPE_IF
+		   ;
 	}
 
 	return ret;
@@ -76,30 +86,65 @@ static void vm_handle_sform( vm_t *vm, scm_value_t form, scm_value_t expr ){
 
 		case RUN_TYPE_DEFINE:
 		case RUN_TYPE_SET:
-			if ( !is_pair( expr )){
-				puts( "error in define!" );
+			{
+				if ( !is_pair( expr )){
+					puts( "error in define!" );
+				}
+
+				scm_pair_t *pair = get_pair( expr );
+
+				vm_stack_push( vm,
+					(type == RUN_TYPE_DEFINE)
+					  ? vm_func_intern_define( )
+					  : vm_func_intern_set( ));
+
+				if ( is_symbol( pair->car )){
+					vm_stack_push( vm, pair->car );
+					vm->ptr = pair->cdr;
+
+				} else if ( is_pair( pair->car )){
+					scm_pair_t *temp = get_pair( pair->car );
+					scm_closure_t *clsr =
+						vm_make_closure( temp->cdr, pair->cdr, vm->env );
+
+					vm_stack_push( vm, temp->car );
+					vm_stack_push( vm, tag_closure( clsr ));
+
+					vm->ptr = SCM_TYPE_NULL;
+				}
 			}
 
-			scm_pair_t *pair = get_pair( expr );
+			break;
 
-			vm_stack_push( vm,
-				(type == RUN_TYPE_DEFINE)
-				  ? vm_func_intern_define( )
-				  : vm_func_intern_set( ));
+		case RUN_TYPE_IF:
+			{
+				if ( !is_pair( expr )){
+					puts( "error in if!" );
+				}
 
-			if ( is_symbol( pair->car )){
-				vm_stack_push( vm, pair->car );
-				vm->ptr = pair->cdr;
-
-			} else if ( is_pair( pair->car )){
-				scm_pair_t *temp = get_pair( pair->car );
-				scm_closure_t *clsr =
-					vm_make_closure( temp->cdr, pair->cdr, vm->env );
-
-				vm_stack_push( vm, temp->car );
-				vm_stack_push( vm, tag_closure( clsr ));
+				puts( "    in if expansion" );
+				scm_pair_t *pair = get_pair( expr );
+				scm_value_t clsr;
 
 				vm->ptr = SCM_TYPE_NULL;
+				vm_call_eval( vm, SCM_TYPE_NULL );
+
+				vm_stack_push( vm, vm_func_intern_if( ));
+
+				scm_value_t test = construct_pair( pair->car, SCM_TYPE_NULL );
+
+				pair = get_pair( pair->cdr );
+				clsr = construct_pair( pair->car, SCM_TYPE_NULL );
+				clsr = tag_closure( vm_make_closure( SCM_TYPE_NULL, clsr, vm->env ));
+				vm_stack_push( vm, clsr );
+
+				pair = get_pair( pair->cdr );
+				clsr = construct_pair( pair->car, SCM_TYPE_NULL );
+				clsr = tag_closure( vm_make_closure( SCM_TYPE_NULL, clsr, vm->env ));
+				vm_stack_push( vm, clsr );
+
+				vm->ptr = test;
+				puts( "    out of if expansion" );
 			}
 
 			break;

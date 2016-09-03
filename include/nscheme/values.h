@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 /*
  *   summary of tagged pointers defined here:
@@ -99,6 +100,15 @@ static inline scm_value_t tag_closure( void *closure ){
 
 static inline scm_value_t tag_boolean( bool boolean ){
 	return (boolean << 8) | SCM_TYPE_BOOLEAN;
+}
+
+static inline scm_value_t construct_pair( scm_value_t car, scm_value_t cdr ){
+	scm_pair_t *pair = calloc( 1, sizeof( scm_pair_t ));
+
+	pair->car = car;
+	pair->cdr = cdr;
+
+	return tag_pair( pair );
 }
 
 // type testing functions
