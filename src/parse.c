@@ -167,3 +167,7 @@ parse_state_t *make_parse_state( FILE *fp ){
 
 	return ret;
 }
+
+void free_parse_state( parse_state_t *state ){
+	free( state );
+}

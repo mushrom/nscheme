@@ -266,6 +266,10 @@ vm_t *vm_init( void ){
 	vm_add_arithmetic_op( ret, "<", vm_op_lessthan );
 	vm_add_arithmetic_op( ret, ">", vm_op_greaterthan );
 
+	vm_add_arithmetic_op( ret, "display", vm_op_display );
+	vm_add_arithmetic_op( ret, "newline", vm_op_newline );
+	vm_add_arithmetic_op( ret, "read", vm_op_read );
+
 	scm_value_t foo;
 
 	foo = tag_symbol( store_symbol( strdup( "lambda" )));

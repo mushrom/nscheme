@@ -1,5 +1,7 @@
 #include <nscheme/vm.h>
 #include <nscheme/vm_ops.h>
+#include <nscheme/parse.h>
+
 #include <stdlib.h>
 
 extern void debug_print( scm_value_t value );
@@ -303,6 +305,36 @@ bool vm_op_intern_if( vm_t *vm, unsigned arg ){
 	} else {
 		vm_stack_push( vm, true_path );
 	}
+
+	return true;
+}
+
+bool vm_op_display( vm_t *vm, unsigned arg ){
+	if ( vm->argnum != 2 ){
+		puts( "not enough args man" );
+		return true;
+	}
+
+	scm_value_t value = vm_stack_pop( vm );
+	debug_print( value );
+
+	return true;
+}
+
+bool vm_op_newline( vm_t *vm, unsigned arg ){
+	putchar( '\n' );
+
+	return true;
+}
+
+bool vm_op_read( vm_t *vm, unsigned arg ){
+	parse_state_t *input = make_parse_state( stdin );
+	scm_value_t value = parse_expression( input );
+
+	vm_stack_pop( vm );
+	vm_stack_push( vm, value );
+
+	free_parse_state( input );
 
 	return true;
 }

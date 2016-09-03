@@ -76,4 +76,8 @@ bool vm_op_intern_define( vm_t *vm, unsigned arg );
 bool vm_op_intern_set( vm_t *vm, unsigned arg );
 bool vm_op_intern_if( vm_t *vm, unsigned arg );
 
+bool vm_op_display( vm_t *vm, unsigned arg );
+bool vm_op_newline( vm_t *vm, unsigned arg );
+bool vm_op_read( vm_t *vm, unsigned arg );
+
 #endif
