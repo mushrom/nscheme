@@ -18,14 +18,6 @@ static scm_closure_t *vm_make_closure( scm_value_t args,
 {
 	scm_closure_t *ret = calloc( 1, sizeof( scm_closure_t ));
 
-	printf( "    closure args: " );
-	debug_print( args );
-	printf( "\n" );
-
-	printf( "    closure body: " );
-	debug_print( body );
-	printf( "\n" );
-
 	ret->definition  = body;
 	ret->args        = args;
 	ret->env         = env;
@@ -122,7 +114,6 @@ static void vm_handle_sform( vm_t *vm, scm_value_t form, scm_value_t expr ){
 					puts( "error in if!" );
 				}
 
-				puts( "    in if expansion" );
 				scm_pair_t *pair = get_pair( expr );
 				scm_value_t clsr;
 
@@ -144,7 +135,6 @@ static void vm_handle_sform( vm_t *vm, scm_value_t form, scm_value_t expr ){
 				vm_stack_push( vm, clsr );
 
 				vm->ptr = test;
-				puts( "    out of if expansion" );
 			}
 
 			break;
@@ -162,19 +152,12 @@ static inline void vm_step_interpreter( vm_t *vm ){
 		vm->ptr = pair->cdr;
 
 		if ( is_pair( pair->car )){
-			printf( "    doing a call, currently have %u args\n", vm->argnum );
 			vm_call_eval( vm, pair->car );
 
 		} else if ( is_symbol( pair->car )){
-			printf( "    doing symbol lookup for '%s'... ", get_symbol( pair->car ));
-
 			env_node_t *foo = env_find_recurse( vm->env, pair->car );
 
 			if ( foo ){
-				printf( "found, " );
-				debug_print( foo->value );
-				printf( "\n" );
-
 				if ( is_special_form( foo->value )){
 					vm_handle_sform( vm, foo->value, pair->cdr );
 
@@ -183,7 +166,7 @@ static inline void vm_step_interpreter( vm_t *vm ){
 				}
 
 			} else {
-				printf( "not found\n" );
+				printf( "    symbol '%s' not found\n", get_symbol( pair->car ));
 				vm_stack_push( vm, pair->car );
 			}
 
