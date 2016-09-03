@@ -45,6 +45,7 @@ static bool is_valid_lambda( scm_pair_t *pair ){
 		&& is_pair( pair->cdr );
 }
 
+// TODO: split this into smaller functions, possibly in a seperate file
 static void vm_handle_sform( vm_t *vm, scm_value_t form, scm_value_t expr ){
 	unsigned type = get_run_type( form );
 
@@ -73,13 +74,17 @@ static void vm_handle_sform( vm_t *vm, scm_value_t form, scm_value_t expr ){
 			break;
 
 		case RUN_TYPE_DEFINE:
+		case RUN_TYPE_SET:
 			if ( !is_pair( expr )){
 				puts( "error in define!" );
 			}
 
 			scm_pair_t *pair = get_pair( expr );
 
-			vm_stack_push( vm, vm_func_intern_set( ));
+			vm_stack_push( vm,
+				(type == RUN_TYPE_DEFINE)
+				  ? vm_func_intern_define( )
+				  : vm_func_intern_set( ));
 
 			if ( is_symbol( pair->car )){
 				vm_stack_push( vm, pair->car );
@@ -117,7 +122,7 @@ static inline void vm_step_interpreter( vm_t *vm ){
 		} else if ( is_symbol( pair->car )){
 			printf( "    doing symbol lookup for '%s'... ", get_symbol( pair->car ));
 
-			env_node_t *foo = env_find( vm->env, pair->car );
+			env_node_t *foo = env_find_recurse( vm->env, pair->car );
 
 			if ( foo ){
 				printf( "found, " );
@@ -206,7 +211,7 @@ static void vm_add_arithmetic_op( vm_t *vm, char *name, vm_func func ){
 	// TODO: find some place to put environment init stuff
 	scm_value_t foo  = tag_symbol( store_symbol( strdup( name )));
 	scm_value_t clsr = tag_closure( meh );
-	env_set( vm->env, ENV_TYPE_DATA, foo, clsr );
+	env_set( vm->env, foo, clsr );
 }
 
 vm_t *vm_init( void ){
@@ -231,16 +236,16 @@ vm_t *vm_init( void ){
 	scm_value_t foo;
 
 	foo = tag_symbol( store_symbol( strdup( "lambda" )));
-	env_set( ret->env, ENV_TYPE_INTERNAL, foo, tag_run_type( RUN_TYPE_LAMBDA ));
+	env_set( ret->env, foo, tag_run_type( RUN_TYPE_LAMBDA ));
 
 	foo = tag_symbol( store_symbol( strdup( "define" )));
-	env_set( ret->env, ENV_TYPE_INTERNAL, foo, tag_run_type( RUN_TYPE_DEFINE ));
+	env_set( ret->env, foo, tag_run_type( RUN_TYPE_DEFINE ));
 
 	foo = tag_symbol( store_symbol( strdup( "define-syntax" )));
-	env_set( ret->env, ENV_TYPE_INTERNAL, foo, tag_run_type( RUN_TYPE_DEFINE_SYNTAX ));
+	env_set( ret->env, foo, tag_run_type( RUN_TYPE_DEFINE_SYNTAX ));
 
 	foo = tag_symbol( store_symbol( strdup( "set!" )));
-	env_set( ret->env, ENV_TYPE_INTERNAL, foo, tag_run_type( RUN_TYPE_SET ));
+	env_set( ret->env, foo, tag_run_type( RUN_TYPE_SET ));
 
 	return ret;
 }

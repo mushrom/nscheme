@@ -17,6 +17,20 @@ static scm_value_t vm_func_return_last( void ){
 	return tag_closure( ret );
 }
 
+scm_value_t vm_func_intern_define( void ){
+	static scm_closure_t *ret = NULL;
+
+	if ( !ret ){
+		ret = calloc( 1, sizeof( scm_closure_t ) + sizeof( vm_op_t[2] ));
+
+		ret->is_compiled = true;
+		ret->code[0].func = vm_op_intern_define;
+		ret->code[1].func = vm_op_return;
+	}
+
+	return tag_closure( ret );
+}
+
 scm_value_t vm_func_intern_set( void ){
 	static scm_closure_t *ret = NULL;
 
@@ -39,7 +53,7 @@ static void vm_load_lambda_args( vm_t *vm, unsigned argnum, scm_value_t args ){
 		scm_pair_t *pair = get_pair( arg );
 		scm_value_t sym = pair->car;
 
-		env_set( vm->env, ENV_TYPE_DATA, sym, vm->stack[vm->sp + i++] );
+		env_set( vm->env, sym, vm->stack[vm->sp + i++] );
 
 		arg = pair->cdr;
 	}
@@ -177,6 +191,25 @@ bool vm_op_lessthan( vm_t *vm, unsigned arg );
 bool vm_op_equal( vm_t *vm, unsigned arg );
 bool vm_op_greaterthan( vm_t *vm, unsigned arg );
 
+bool vm_op_intern_define( vm_t *vm, unsigned arg ){
+	if ( vm->argnum != 3 ){
+		puts( "not enough args man" );
+		return true;
+	}
+
+	scm_value_t datum = vm_stack_pop( vm );
+	scm_value_t sym   = vm_stack_pop( vm );
+
+	if ( !is_symbol( sym )){
+		puts( "expected symbol" );
+		return true;
+	}
+
+	env_set( vm->env, sym, datum );
+
+	return true;
+}
+
 bool vm_op_intern_set( vm_t *vm, unsigned arg ){
 	if ( vm->argnum != 3 ){
 		puts( "not enough args man" );
@@ -191,7 +224,7 @@ bool vm_op_intern_set( vm_t *vm, unsigned arg ){
 		return true;
 	}
 
-	env_set( vm->env, ENV_TYPE_DATA, sym, datum );
+	env_set_recurse( vm->env, sym, datum );
 
 	return true;
 }

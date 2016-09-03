@@ -53,7 +53,9 @@ static inline void vm_call_return( vm_t *vm ){
 	}
 }
 
+scm_value_t vm_func_intern_define( void );
 scm_value_t vm_func_intern_set( void );
+
 void vm_call_apply( vm_t *vm );
 
 bool vm_op_return( vm_t *vm, unsigned arg );
@@ -69,6 +71,7 @@ bool vm_op_lessthan( vm_t *vm, unsigned arg );
 bool vm_op_equal( vm_t *vm, unsigned arg );
 bool vm_op_greaterthan( vm_t *vm, unsigned arg );
 
+bool vm_op_intern_define( vm_t *vm, unsigned arg );
 bool vm_op_intern_set( vm_t *vm, unsigned arg );
 
 #endif

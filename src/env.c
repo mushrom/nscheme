@@ -9,7 +9,7 @@ environment_t *env_create( environment_t *last ){
 	return ret;
 }
 
-void env_set( environment_t *env, unsigned type, scm_value_t key, scm_value_t value ){
+void env_set( environment_t *env, scm_value_t key, scm_value_t value ){
 	env_node_t *node = env->root;
 
 	if ( !env->root ){
@@ -33,23 +33,39 @@ void env_set( environment_t *env, unsigned type, scm_value_t key, scm_value_t va
 		}
 	}
 
-	node->type  = type;
 	node->key   = key;
 	node->value = value;
 }
 
+void env_set_recurse( environment_t *env, scm_value_t key, scm_value_t value ){
+	env_node_t *node = env_find_recurse( env, key );
+
+	if ( node ){
+		node->key   = key;
+		node->value = value;
+
+	} else {
+		env_set( env, key, value );
+	}
+}
+
 env_node_t *env_find( environment_t *env, scm_value_t key ){
+	env_node_t *ret = env->root;
+
+	while ( ret && key != ret->key ){
+		ret = (key < ret->key)? ret->left : ret->right;
+	}
+
+	return ret;
+}
+
+env_node_t *env_find_recurse( environment_t *env, scm_value_t key ){
 	env_node_t *ret = NULL;
 
-	while ( env && !ret ){
-		ret = env->root;
-
-		while ( ret && key != ret->key ){
-			ret = (key < ret->key)? ret->left : ret->right;
-		}
-
+	do {
+		ret = env_find( env, key );
 		env = env->last;
-	}
+	} while ( env && !ret );
 
 	return ret;
 }
