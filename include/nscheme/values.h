@@ -40,6 +40,8 @@ enum runtime_types {
 	RUN_TYPE_DEFINE_SYNTAX,
 	RUN_TYPE_SET,
 	RUN_TYPE_IF,
+	RUN_TYPE_EVAL,
+	RUN_TYPE_SET_PTR,
 };
 
 enum token_type { 

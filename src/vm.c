@@ -112,26 +112,22 @@ static inline void vm_handle_if( vm_t *vm,
 	}
 
 	scm_pair_t *pair = get_pair( expr );
-	scm_value_t clsr;
 
+	vm_stack_push( vm, tag_run_type( RUN_TYPE_SET_PTR ));
 	vm->ptr = SCM_TYPE_NULL;
-	vm_call_eval( vm, SCM_TYPE_NULL );
 
+	vm_call_eval( vm, SCM_TYPE_NULL );
 	vm_stack_push( vm, vm_func_intern_if( ));
 
-	scm_value_t test = construct_pair( pair->car, SCM_TYPE_NULL );
+	scm_value_t test = pair->car;
 
 	pair = get_pair( pair->cdr );
-	clsr = construct_pair( pair->car, SCM_TYPE_NULL );
-	clsr = tag_closure( vm_make_closure( SCM_TYPE_NULL, clsr, vm->env ));
-	vm_stack_push( vm, clsr );
+	vm_stack_push( vm, pair->car );
 
 	pair = get_pair( pair->cdr );
-	clsr = construct_pair( pair->car, SCM_TYPE_NULL );
-	clsr = tag_closure( vm_make_closure( SCM_TYPE_NULL, clsr, vm->env ));
-	vm_stack_push( vm, clsr );
+	vm_stack_push( vm, pair->car );
 
-	vm->ptr = test;
+	vm_call_eval( vm, test );
 }
 
 static void vm_handle_sform( vm_t *vm, scm_value_t form, scm_value_t expr ){
@@ -190,9 +186,24 @@ static inline void vm_step_interpreter( vm_t *vm ){
 		vm_call_apply( vm );
 
 	} else {
-		// todo: error
-		vm->running = false;
-		vm->stack[vm->sp] = vm->ptr;
+		scm_value_t value = vm->ptr;
+
+		// TODO: there's similar lookup code above, possibly make a function
+		//       that handles both cases here, like
+		//       'vm_resolve_atom' or something
+		if ( is_symbol( vm->ptr )){
+			env_node_t *foo = env_find_recurse( vm->env, vm->ptr );
+
+			if ( foo ){
+				value = foo->value;
+
+			} else {
+				printf( "    symbol '%s' not found\n", get_symbol( vm->ptr ));
+			}
+		}
+
+		vm->stack[vm->sp] = value;
+		vm_call_return( vm );
 	}
 }
 

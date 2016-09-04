@@ -106,6 +106,15 @@ void vm_call_apply( vm_t *vm ){
 			vm_stack_push( vm, vm_func_return_last( ));
 		}
 
+	} else if ( func == tag_run_type( RUN_TYPE_SET_PTR )){
+		if ( vm->argnum != 2 ){
+			puts( "    can't eval with given arguments" );
+		}
+
+		scm_value_t ptr = vm_stack_pop( vm );
+		vm_stack_pop( vm );
+		vm->ptr = ptr;
+
 	} else {
 		printf( "    dunno how to apply " );
 		debug_print( func );
@@ -344,7 +353,7 @@ bool vm_op_intern_set( vm_t *vm, unsigned arg ){
 
 bool vm_op_intern_if( vm_t *vm, unsigned arg ){
 	if ( vm->argnum != 4 ){
-		puts( "not enough args man" );
+		printf( "if: not enough args, have %u but expected 4\n", vm->argnum );
 		return true;
 	}
 
@@ -366,7 +375,7 @@ bool vm_op_intern_if( vm_t *vm, unsigned arg ){
 
 bool vm_op_display( vm_t *vm, unsigned arg ){
 	if ( vm->argnum != 2 ){
-		puts( "not enough args man" );
+		printf( "display: expected 2 args but have %u\n", vm->argnum );
 		return true;
 	}
 

@@ -32,7 +32,7 @@ void debug_print( scm_value_t value ){
 	} else if ( is_run_type( value )){
 		const char *strs[] = {
 			"<none>", "lambda", "define", "define-syntax", "set!",
-			"if",
+			"if", "eval",
 		};
 
 		printf( "#<runtime type:%s>", strs[get_run_type( value )]);
