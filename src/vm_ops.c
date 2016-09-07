@@ -1,6 +1,7 @@
 #include <nscheme/vm.h>
 #include <nscheme/vm_ops.h>
 #include <nscheme/parse.h>
+#include <nscheme/compiler.h>
 
 #include <stdlib.h>
 
@@ -101,6 +102,10 @@ void vm_call_apply( vm_t *vm ){
 			vm->sp -= vm->argnum;
 			vm->argnum = 0;
 			clsr->num_calls++;
+
+			if ( clsr->num_calls == 3 ){
+				vm_compile_closure( vm, clsr );
+			}
 
 			vm_load_lambda_args( vm, called_args, clsr->args );
 			vm_stack_push( vm, vm_func_return_last( ));
