@@ -20,10 +20,13 @@ typedef bool (*vm_func)( struct vm *vm, unsigned arg );
 
 typedef struct vm_op {
 	vm_func func;
-	unsigned long arg;
+	uintptr_t arg;
 } vm_op_t;
 
 typedef struct scm_closure {
+	// compiled instructions for vm
+	vm_op_t *code;
+
 	// array of variable references closed at compile time
 	scm_value_t *closures;
 
@@ -62,8 +65,6 @@ typedef struct scm_closure {
 			scm_value_t args;
 		};
 	};
-
-	vm_op_t code[];
 } scm_closure_t;
 
 typedef struct vm_frame {

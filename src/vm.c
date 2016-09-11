@@ -26,23 +26,6 @@ static scm_closure_t *vm_make_closure( scm_value_t args,
 	return ret;
 }
 
-static bool is_special_form( scm_value_t value ){
-	bool ret = false;
-
-	if ( is_run_type( value )){
-		unsigned type = get_run_type( value );
-
-		ret = type == RUN_TYPE_LAMBDA
-		   || type == RUN_TYPE_DEFINE
-		   || type == RUN_TYPE_DEFINE_SYNTAX
-		   || type == RUN_TYPE_SET
-		   || type == RUN_TYPE_IF
-		   ;
-	}
-
-	return ret;
-}
-
 static bool is_valid_lambda( scm_pair_t *pair ){
 	return (is_pair( pair->car ) || is_null( pair->car ))
 		&& is_pair( pair->cdr );
@@ -255,7 +238,9 @@ scm_value_t vm_evaluate_expr( vm_t *vm, scm_value_t expr ){
 #include <string.h>
 
 static void vm_add_arithmetic_op( vm_t *vm, char *name, vm_func func ){
-	scm_closure_t *meh = calloc( 1, sizeof( scm_closure_t ) + sizeof( vm_op_t[2] ));
+	scm_closure_t *meh = calloc( 1, sizeof( scm_closure_t ));
+	meh->code = calloc( 1, sizeof( vm_op_t[2] ));
+
 	meh->code[0].func = func;
 	meh->code[1].func = vm_op_return;
 	meh->is_compiled = true;

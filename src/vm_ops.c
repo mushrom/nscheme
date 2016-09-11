@@ -11,7 +11,8 @@ static scm_value_t vm_func_return_last( void ){
 	static scm_closure_t *ret = NULL;
 
 	if ( !ret ){
-		ret = calloc( 1, sizeof( scm_closure_t ) + sizeof( vm_op_t ));
+		ret = calloc( 1, sizeof( scm_closure_t ));
+		ret->code = calloc( 1, sizeof( vm_op_t[1] ));
 
 		ret->is_compiled = true;
 		ret->code[0].func = vm_op_return_last;
@@ -24,7 +25,8 @@ scm_value_t vm_func_intern_define( void ){
 	static scm_closure_t *ret = NULL;
 
 	if ( !ret ){
-		ret = calloc( 1, sizeof( scm_closure_t ) + sizeof( vm_op_t[2] ));
+		ret = calloc( 1, sizeof( scm_closure_t ));
+		ret->code = calloc( 1, sizeof( vm_op_t[2] ));
 
 		ret->is_compiled = true;
 		ret->code[0].func = vm_op_intern_define;
@@ -38,7 +40,8 @@ scm_value_t vm_func_intern_set( void ){
 	static scm_closure_t *ret = NULL;
 
 	if ( !ret ){
-		ret = calloc( 1, sizeof( scm_closure_t ) + sizeof( vm_op_t[2] ));
+		ret = calloc( 1, sizeof( scm_closure_t ));
+		ret->code = calloc( 1, sizeof( vm_op_t[2] ));
 
 		ret->is_compiled = true;
 		ret->code[0].func = vm_op_intern_set;
@@ -52,7 +55,8 @@ scm_value_t vm_func_intern_if( void ){
 	static scm_closure_t *ret = NULL;
 
 	if ( !ret ){
-		ret = calloc( 1, sizeof( scm_closure_t ) + sizeof( vm_op_t[2] ));
+		ret = calloc( 1, sizeof( scm_closure_t ));
+		ret->code = calloc( 1, sizeof( vm_op_t[2] ));
 
 		ret->is_compiled = true;
 		ret->code[0].func = vm_op_intern_if;

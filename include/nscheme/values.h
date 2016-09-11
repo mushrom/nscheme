@@ -180,4 +180,22 @@ static inline bool get_boolean( scm_value_t value ){
 	return value >> 8;
 }
 
+// composite functions
+static inline bool is_special_form( scm_value_t value ){
+	bool ret = false;
+
+	if ( is_run_type( value )){
+		unsigned type = get_run_type( value );
+
+		ret = type == RUN_TYPE_LAMBDA
+		   || type == RUN_TYPE_DEFINE
+		   || type == RUN_TYPE_DEFINE_SYNTAX
+		   || type == RUN_TYPE_SET
+		   || type == RUN_TYPE_IF
+		   ;
+	}
+
+	return ret;
+}
+
 #endif
