@@ -26,7 +26,7 @@ void debug_print( scm_value_t value ){
 	} else if ( is_closure( value )){
 		scm_closure_t *clsr = get_closure( value );
 		printf( "#<closure:%s @ %p>",
-			((char *[]){"interpreted", "compiled"})[clsr->is_compiled],
+			((char *[]){"interpreted", "compiled"})[clsr->compiled],
 			clsr );
 
 	} else if ( is_run_type( value )){

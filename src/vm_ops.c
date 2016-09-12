@@ -14,7 +14,7 @@ static scm_value_t vm_func_return_last( void ){
 		ret = calloc( 1, sizeof( scm_closure_t ));
 		ret->code = calloc( 1, sizeof( vm_op_t[1] ));
 
-		ret->is_compiled = true;
+		ret->compiled = true;
 		ret->code[0].func = vm_op_return_last;
 	}
 
@@ -28,7 +28,7 @@ scm_value_t vm_func_intern_define( void ){
 		ret = calloc( 1, sizeof( scm_closure_t ));
 		ret->code = calloc( 1, sizeof( vm_op_t[2] ));
 
-		ret->is_compiled = true;
+		ret->compiled = true;
 		ret->code[0].func = vm_op_intern_define;
 		ret->code[1].func = vm_op_return;
 	}
@@ -43,7 +43,7 @@ scm_value_t vm_func_intern_set( void ){
 		ret = calloc( 1, sizeof( scm_closure_t ));
 		ret->code = calloc( 1, sizeof( vm_op_t[2] ));
 
-		ret->is_compiled = true;
+		ret->compiled = true;
 		ret->code[0].func = vm_op_intern_set;
 		ret->code[1].func = vm_op_return;
 	}
@@ -58,7 +58,7 @@ scm_value_t vm_func_intern_if( void ){
 		ret = calloc( 1, sizeof( scm_closure_t ));
 		ret->code = calloc( 1, sizeof( vm_op_t[2] ));
 
-		ret->is_compiled = true;
+		ret->compiled = true;
 		ret->code[0].func = vm_op_intern_if;
 		ret->code[1].func = vm_op_return;
 	}
@@ -90,17 +90,19 @@ void vm_call_apply( vm_t *vm ){
 	if ( is_closure( func )){
 		scm_closure_t *clsr = get_closure( func );
 		printf( "    applying %s closure: %p\n",
-			((char *[]){"interpreted", "compiled"})[clsr->is_compiled],
+			((char *[]){"interpreted", "compiled"})[clsr->compiled],
 			clsr );
 
 		vm->closure = clsr;
 
-		if ( clsr->is_compiled ){
+		if ( clsr->compiled ){
+			vm->runmode = RUN_MODE_COMPILED;
 			vm->ip = 0;
 
 		} else {
 			unsigned called_args = vm->argnum;
 
+			vm->runmode = RUN_MODE_INTERP;
 			vm->env = env_create( clsr->env );
 			vm->ptr = clsr->definition;
 			vm->sp -= vm->argnum;
@@ -132,25 +134,86 @@ void vm_call_apply( vm_t *vm ){
 	}
 }
 
-bool vm_op_return( vm_t *vm, unsigned arg ){
+bool vm_op_return( vm_t *vm, uintptr_t arg ){
 	vm_call_return( vm );
 
 	return false;
 }
 
-bool vm_op_return_last( vm_t *vm, unsigned arg ){
+bool vm_op_return_last( vm_t *vm, uintptr_t arg ){
 	vm->stack[vm->sp - vm->argnum] = vm_stack_pop( vm );
 	vm_call_return( vm );
 
 	return false;
 }
 
-bool vm_op_add( vm_t *vm, unsigned arg ){
+bool vm_op_jump( vm_t *vm, uintptr_t arg ){
+	vm->ip = arg;
+
+	return false;
+}
+
+bool vm_op_jump_if_false( vm_t *vm, uintptr_t arg ){
+	scm_value_t value = vm_stack_peek( vm );
+
+	if ( value == tag_boolean( false )){
+		vm->ip = arg;
+		return false;
+	}
+
+	return true;
+}
+
+bool vm_op_closure_ref( vm_t *vm, uintptr_t arg ){
+	env_node_t *var = vm->closure->closures[arg];
+
+	vm_stack_push( vm, var->value );
+
+	return true;
+}
+
+bool vm_op_stack_ref( vm_t *vm, uintptr_t arg ){
+	// TODO: maybe find another way to do this that doesn't require
+	//       the temporary index variable, eg. storing the 'base'
+	//       stack index from the call frame in the vm struct
+	uintptr_t index   = vm->sp - vm->argnum + arg;
+	scm_value_t value = vm->stack[index];
+
+	vm_stack_push( vm, value );
+
+	return true;
+}
+
+bool vm_op_push_const( vm_t *vm, uintptr_t arg ){
+	vm_stack_push( vm, arg );
+	return true;
+}
+
+bool vm_op_do_call( vm_t *vm, uintptr_t arg ){
+	vm_callframe_t *frame = vm->calls + vm->callp++;
+
+	unsigned start  = vm->sp - vm->argnum + arg;
+	unsigned argnum = vm->sp - start;
+
+	frame->closure = vm->closure;
+	frame->ip      = vm->ip + 1;
+	frame->sp      = start;
+	frame->argnum  = vm->argnum - argnum;
+	frame->runmode = vm->runmode;
+
+	vm->argnum = argnum;
+
+	vm_call_apply( vm );
+
+	return false;
+}
+
+bool vm_op_add( vm_t *vm, uintptr_t arg ){
 	scm_value_t sum = 0;
 
 	printf( "    did stuff at %s\n", __func__ );
 
-	for ( unsigned args = vm->argnum - 1; args; args-- ){
+	for ( uintptr_t args = vm->argnum - 1; args; args-- ){
 		// no untagging/retagging needed because the lower bits
 		// of tagged integers are 0b00
 		sum += vm_stack_pop( vm );
@@ -165,12 +228,12 @@ bool vm_op_add( vm_t *vm, unsigned arg ){
 	return true;
 }
 
-bool vm_op_sub( vm_t *vm, unsigned arg ){
+bool vm_op_sub( vm_t *vm, uintptr_t arg ){
 	scm_value_t sum = vm->stack[vm->sp - vm->argnum + 1];
 
 	printf( "    did stuff at %s\n", __func__ );
 
-	for ( unsigned args = vm->argnum - 2; args; args-- ){
+	for ( uintptr_t args = vm->argnum - 2; args; args-- ){
 		sum -= vm_stack_pop( vm );
 	}
 
@@ -181,12 +244,12 @@ bool vm_op_sub( vm_t *vm, unsigned arg ){
 	return true;
 }
 
-bool vm_op_mul( vm_t *vm, unsigned arg ){
+bool vm_op_mul( vm_t *vm, uintptr_t arg ){
 	uintptr_t sum = 1;
 
 	printf( "    did stuff at %s\n", __func__ );
 
-	for ( unsigned args = vm->argnum - 1; args; args-- ){
+	for ( uintptr_t args = vm->argnum - 1; args; args-- ){
 		sum *= get_integer( vm_stack_pop( vm ));
 	}
 
@@ -196,12 +259,12 @@ bool vm_op_mul( vm_t *vm, unsigned arg ){
 	return true;
 }
 
-bool vm_op_div( vm_t *vm, unsigned arg ){
+bool vm_op_div( vm_t *vm, uintptr_t arg ){
 	uintptr_t sum = vm->stack[vm->sp - vm->argnum + 1];
 
 	printf( "    did stuff at %s\n", __func__ );
 
-	for ( unsigned args = vm->argnum - 2; args; args-- ){
+	for ( uintptr_t args = vm->argnum - 2; args; args-- ){
 		uintptr_t temp = vm_stack_pop( vm );
 
 		if ( temp ){
@@ -220,7 +283,7 @@ bool vm_op_div( vm_t *vm, unsigned arg ){
 	return true;
 }
 
-bool vm_op_cons( vm_t *vm, unsigned arg ){
+bool vm_op_cons( vm_t *vm, uintptr_t arg ){
 	if ( vm->argnum != 3 ){
 		puts( "not enough args man" );
 		return true;
@@ -235,7 +298,7 @@ bool vm_op_cons( vm_t *vm, unsigned arg ){
 	return true;
 }
 
-bool vm_op_car( vm_t *vm, unsigned arg ){
+bool vm_op_car( vm_t *vm, uintptr_t arg ){
 	if ( vm->argnum != 2 ){
 		puts( "cargs" );
 		return true;
@@ -255,7 +318,7 @@ bool vm_op_car( vm_t *vm, unsigned arg ){
 	return true;
 }
 
-bool vm_op_cdr( vm_t *vm, unsigned arg ){
+bool vm_op_cdr( vm_t *vm, uintptr_t arg ){
 	if ( vm->argnum != 2 ){
 		puts( "cdargs" );
 		return true;
@@ -275,9 +338,7 @@ bool vm_op_cdr( vm_t *vm, unsigned arg ){
 	return true;
 }
 
-bool vm_op_jump( vm_t *vm, unsigned arg );
-
-bool vm_op_lessthan( vm_t *vm, unsigned arg ){
+bool vm_op_lessthan( vm_t *vm, uintptr_t arg ){
 	if ( vm->argnum != 3 ){
 		puts( "not enough args man" );
 		return true;
@@ -292,7 +353,7 @@ bool vm_op_lessthan( vm_t *vm, unsigned arg ){
 	return true;
 }
 
-bool vm_op_equal( vm_t *vm, unsigned arg ){
+bool vm_op_equal( vm_t *vm, uintptr_t arg ){
 	if ( vm->argnum != 3 ){
 		puts( "not enough args man" );
 		return true;
@@ -307,7 +368,7 @@ bool vm_op_equal( vm_t *vm, unsigned arg ){
 	return true;
 }
 
-bool vm_op_greaterthan( vm_t *vm, unsigned arg ){
+bool vm_op_greaterthan( vm_t *vm, uintptr_t arg ){
 	if ( vm->argnum != 3 ){
 		puts( "not enough args man" );
 		return true;
@@ -322,7 +383,7 @@ bool vm_op_greaterthan( vm_t *vm, unsigned arg ){
 	return true;
 }
 
-bool vm_op_intern_define( vm_t *vm, unsigned arg ){
+bool vm_op_intern_define( vm_t *vm, uintptr_t arg ){
 	if ( vm->argnum != 3 ){
 		puts( "not enough args man" );
 		return true;
@@ -341,7 +402,7 @@ bool vm_op_intern_define( vm_t *vm, unsigned arg ){
 	return true;
 }
 
-bool vm_op_intern_set( vm_t *vm, unsigned arg ){
+bool vm_op_intern_set( vm_t *vm, uintptr_t arg ){
 	if ( vm->argnum != 3 ){
 		puts( "not enough args man" );
 		return true;
@@ -360,7 +421,7 @@ bool vm_op_intern_set( vm_t *vm, unsigned arg ){
 	return true;
 }
 
-bool vm_op_intern_if( vm_t *vm, unsigned arg ){
+bool vm_op_intern_if( vm_t *vm, uintptr_t arg ){
 	if ( vm->argnum != 4 ){
 		printf( "if: not enough args, have %u but expected 4\n", vm->argnum );
 		return true;
@@ -382,7 +443,7 @@ bool vm_op_intern_if( vm_t *vm, unsigned arg ){
 	return true;
 }
 
-bool vm_op_display( vm_t *vm, unsigned arg ){
+bool vm_op_display( vm_t *vm, uintptr_t arg ){
 	if ( vm->argnum != 2 ){
 		printf( "display: expected 2 args but have %u\n", vm->argnum );
 		return true;
@@ -394,13 +455,13 @@ bool vm_op_display( vm_t *vm, unsigned arg ){
 	return true;
 }
 
-bool vm_op_newline( vm_t *vm, unsigned arg ){
+bool vm_op_newline( vm_t *vm, uintptr_t arg ){
 	putchar( '\n' );
 
 	return true;
 }
 
-bool vm_op_read( vm_t *vm, unsigned arg ){
+bool vm_op_read( vm_t *vm, uintptr_t arg ){
 	parse_state_t *input = make_parse_state( stdin );
 	scm_value_t value = parse_expression( input );
 

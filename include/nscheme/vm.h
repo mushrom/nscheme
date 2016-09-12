@@ -14,9 +14,14 @@
 	}
 	*/
 
+enum {
+	RUN_MODE_INTERP,
+	RUN_MODE_COMPILED,
+};
+
 struct vm;
 
-typedef bool (*vm_func)( struct vm *vm, unsigned arg );
+typedef bool (*vm_func)( struct vm *vm, uintptr_t arg );
 
 typedef struct vm_op {
 	vm_func func;
@@ -28,7 +33,7 @@ typedef struct scm_closure {
 	vm_op_t *code;
 
 	// array of variable references closed at compile time
-	scm_value_t *closures;
+	env_node_t **closures;
 
 	// array of variable names corresponding to entries in `closures`
 	scm_value_t *varnames;
@@ -39,7 +44,7 @@ typedef struct scm_closure {
 
 	// true if the closure has been compiled to threaded code,
 	// false otherwise.
-	bool is_compiled;
+	bool compiled;
 
 	// how many times this closure has been called. this determines when
 	// the JIT compiler will be called, and at which optimization levels.
@@ -72,9 +77,10 @@ typedef struct vm_frame {
 
 	unsigned sp;
 	unsigned argnum;
+	unsigned runmode;
 
 	union {
-		// similar to above, ip is used when `closure->is_compiled` is true
+		// similar to above, ip is used when `runmode` is true
 		unsigned ip;
 		// and `ptr` is used when the tree walker is used, to keep track
 		// of the next token to evaluate
@@ -105,6 +111,7 @@ typedef struct vm {
 	bool running;
 	unsigned stack_size;
 	unsigned calls_size;
+	unsigned runmode;
 } vm_t;
 
 vm_t *vm_init( void );

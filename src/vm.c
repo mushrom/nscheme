@@ -21,7 +21,7 @@ static scm_closure_t *vm_make_closure( scm_value_t args,
 	ret->definition  = body;
 	ret->args        = args;
 	ret->env         = env;
-	ret->is_compiled = false;
+	ret->compiled    = false;
 
 	return ret;
 }
@@ -194,7 +194,8 @@ void vm_run( vm_t *vm ){
 	//void (*stepfuncs[2])(vm_t *) = { step_vm_interpreter, step_vm_compiled };
 
 	while ( vm->running ){
-		if ( vm->closure->is_compiled ){
+		//if ( vm->closure->is_compiled ){
+		if ( vm->runmode == RUN_MODE_COMPILED ){
 			vm_step_compiled( vm );
 		} else {
 			vm_step_interpreter( vm );
@@ -228,6 +229,7 @@ scm_value_t vm_evaluate_expr( vm_t *vm, scm_value_t expr ){
 	vm->closure->definition = expr;
 	vm->argnum = 0;
 	vm->env = vm_r7rs_environment( );
+	vm->runmode = RUN_MODE_INTERP;
 
 	vm_run( vm );
 
@@ -243,7 +245,7 @@ static void vm_add_arithmetic_op( vm_t *vm, char *name, vm_func func ){
 
 	meh->code[0].func = func;
 	meh->code[1].func = vm_op_return;
-	meh->is_compiled = true;
+	meh->compiled = true;
 
 	// TODO: find some place to put environment init stuff
 	scm_value_t foo  = tag_symbol( store_symbol( strdup( name )));

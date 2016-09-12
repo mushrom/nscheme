@@ -167,7 +167,6 @@ static inline bool is_if_token( environment_t *env, scm_value_t sym ){
 	bool ret = false;
 
 	if ( is_symbol( sym )){
-		scm_pair_t *pair = get_pair( sym );
 		env_node_t *var = env_find_recurse( env, sym );
 
 		ret = var && var->value == tag_run_type( RUN_TYPE_IF );
@@ -208,8 +207,6 @@ static inline void compile_if_expression( comp_state_t *state,
 {
 	printf( "    | compiling if expression...\n" );
 
-	scm_pair_t *pair = get_pair( code );
-
 	scm_pair_t codebuf_pair = {
 		.car = scm_car( scm_cdr( code )),
 		.cdr = SCM_TYPE_NULL,
@@ -220,8 +217,6 @@ static inline void compile_if_expression( comp_state_t *state,
 	compile_expression_list( state, codebuf, args );
 
 	instr_node_t *false_jump = add_instr_node( state, INSTR_JUMP_IF_FALSE, 0 );
-	unsigned first_expr = state->instr_ptr;
-
 	codebuf_pair.car = scm_car( scm_cdr( scm_cdr( code )));
 
 	compile_expression_list( state, codebuf, args );
@@ -278,6 +273,75 @@ static inline void compile_expression_list( comp_state_t *state,
 	}
 }
 
+static inline void store_closed_vars( comp_state_t *state,
+                                      scm_closure_t *closure )
+{
+	printf( "    | - closure ptr: %u\n", state->closure_ptr );
+
+	closure->closures = calloc( 1, sizeof( env_node_t *[state->closure_ptr] ));
+
+	closure_node_t *temp = state->closed_vars;
+	unsigned i = state->closure_ptr - 1;
+
+	while ( temp ){
+		closure_node_t *next = temp->next;
+
+		printf( "    | - closure ref: %p : %s\n",
+			temp->var_ref, get_symbol( temp->sym ));
+
+		closure->closures[i--] = temp->var_ref;
+
+		free( temp );
+		temp = next;
+	}
+}
+
+static inline void store_instructions( comp_state_t *state,
+                                       scm_closure_t *closure )
+{
+	printf( "    | - instruction ptr: %u\n", state->instr_ptr );
+
+	closure->code = calloc( 1, sizeof( vm_op_t[state->instr_ptr] ));
+
+	unsigned i = 0;
+	for ( instr_node_t *node = state->instrs; node; ){
+		instr_node_t *next = node->next;
+		const char *opnames[] = {
+			"none",
+			"do_call",
+			"jump_if_false",
+			"jump",
+			"push_const",
+			"closure_ref",
+			"stack_ref",
+			"return",
+		};
+
+		vm_func opfuncs[] = {
+			NULL,
+			vm_op_do_call,
+			vm_op_jump_if_false,
+			vm_op_jump,
+			vm_op_push_const,
+			vm_op_closure_ref,
+			vm_op_stack_ref,
+			vm_op_return_last,
+		};
+
+		closure->code[i].func = opfuncs[node->instr];
+		closure->code[i].arg  = node->op;
+
+		printf( "    | - instruction %3u: %14s (%p) : %lu\n",
+			i++,
+			opnames[node->instr],
+			opfuncs[node->instr],
+			node->op );
+
+		free( node );
+		node = next;
+	}
+}
+
 scm_closure_t *vm_compile_closure( vm_t *vm, scm_closure_t *closure ){
 	scm_closure_t *ret = NULL;
 	comp_state_t state;
@@ -297,43 +361,12 @@ scm_closure_t *vm_compile_closure( vm_t *vm, scm_closure_t *closure ){
 
 	printf( "    | returning from closure\n" );
 
-	printf( "    | - closure ptr: %u\n", state.closure_ptr );
-	for ( closure_node_t *temp = state.closed_vars; temp; ){
-		closure_node_t *next = temp->next;
-
-		printf( "    | - closure ref: %p : %s\n",
-			temp->var_ref, get_symbol( temp->sym ));
-
-		free( temp );
-		temp = next;
-	}
-
-	printf( "    | - instruction ptr: %u\n", state.instr_ptr );
-
-	unsigned i = 0;
-	for ( instr_node_t *node = state.instrs; node; ){
-		instr_node_t *next = node->next;
-		const char *opnames[] = {
-			"none",
-			"do_call",
-			"jump_if_false",
-			"jump",
-			"push_const",
-			"closure_ref",
-			"stack_ref",
-			"return",
-		};
-
-		printf( "    | - instruction %3u: %14s : %lu\n",
-			i++,
-			opnames[node->instr],
-			node->op );
-
-		free( node );
-		node = next;
-	}
+	store_closed_vars( &state, closure );
+	store_instructions( &state, closure );
 
 	printf( "    + done\n" );
+
+	closure->compiled = true;
 
 	return ret;
 }
