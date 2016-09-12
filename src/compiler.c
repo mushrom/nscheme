@@ -1,7 +1,19 @@
 #include <nscheme/compiler.h>
 #include <nscheme/env.h>
+#include <string.h>
 
 extern void debug_print( scm_value_t value );
+
+enum {
+	INSTR_NONE,
+	INSTR_DO_CALL,
+	INSTR_JUMP_IF_FALSE,
+	INSTR_JUMP,
+	INSTR_PUSH_CONSTANT,
+	INSTR_CLOSURE_REF,
+	INSTR_STACK_REF,
+	INSTR_RETURN,
+};
 
 typedef struct closure_node {
 	scm_value_t sym;
@@ -9,9 +21,19 @@ typedef struct closure_node {
 	env_node_t *var_ref;
 } closure_node_t;
 
+typedef struct instr_node {
+	unsigned instr;
+	uintptr_t op;
+
+	struct instr_node *prev;
+	struct instr_node *next;
+} instr_node_t;
+
 typedef struct comp_state {
 	scm_closure_t  *closure;
 	closure_node_t *closed_vars;
+	instr_node_t   *instrs;
+	instr_node_t   *last_instr;
 
 	unsigned stack_ptr;
 	unsigned closure_ptr;
@@ -54,13 +76,15 @@ static inline int list_index( scm_value_t value, scm_value_t target ){
 }
 
 static inline unsigned add_closure_node( comp_state_t *state,
-                                         env_node_t *node,
-                                         scm_value_t sym )
+                                         env_node_t   *node,
+                                         scm_value_t  sym )
 {
 	unsigned ret = state->closure_ptr;
 
 	closure_node_t *new_node = calloc( 1, sizeof( closure_node_t ));
 
+	// TODO: search through closure list before adding a new node
+	//       to prevent having duplicate entries in the list
 	new_node->sym = sym;
 	new_node->next = state->closed_vars;
 	new_node->var_ref = node;
@@ -71,9 +95,154 @@ static inline unsigned add_closure_node( comp_state_t *state,
 	return ret;
 }
 
-static inline void recurse_code( comp_state_t *state,
-                                 scm_value_t code,
-                                 scm_value_t args )
+static inline instr_node_t *add_instr_node( comp_state_t *state,
+                                            unsigned     instruction,
+                                            uintptr_t    argument )
+{
+	instr_node_t *node = calloc( 1, sizeof(instr_node_t));
+
+	node->instr = instruction;
+	node->op    = argument;
+
+	if ( state->last_instr ){
+		node->prev = state->last_instr;
+		state->last_instr->next = node;
+	}
+
+	if ( !state->instrs ){
+		state->instrs = node;
+	}
+
+	state->last_instr = node;
+	state->instr_ptr++;
+
+	return node;
+}
+
+static inline void compile_value( comp_state_t *state,
+                                  scm_value_t args,
+                                  scm_value_t value )
+{
+	printf( "    | got a value,  " );
+
+	if ( is_symbol( value )){
+		int lookup = list_index( args, value );
+
+		if ( lookup >= 0 ){
+			// add one to account for closure on stack before arguments
+			lookup += 1;
+			printf( "p   parameter %d  : ", lookup );
+			add_instr_node( state, INSTR_STACK_REF, lookup );
+
+		} else {
+			env_node_t *var = env_find_recurse( state->closure->env, value );
+
+			if ( var ){
+				if ( is_special_form( var->value )){
+					printf( "s special form %u : ", get_run_type( var->value ));
+
+				} else {
+					unsigned n = add_closure_node( state, var, value );
+					printf( "c closure ref %u  : ", n );
+					add_instr_node( state, INSTR_CLOSURE_REF, n );
+				}
+
+			} else {
+				printf( "not found (TODO: error), " );
+			}
+		}
+
+	} else {
+		printf( "                   " );
+		add_instr_node( state, INSTR_PUSH_CONSTANT, value );
+	}
+
+	debug_print( value );
+	printf( "\n" );
+
+	state->stack_ptr++;
+}
+
+static inline bool is_if_token( environment_t *env, scm_value_t sym ){
+	bool ret = false;
+
+	if ( is_symbol( sym )){
+		scm_pair_t *pair = get_pair( sym );
+		env_node_t *var = env_find_recurse( env, sym );
+
+		ret = var && var->value == tag_run_type( RUN_TYPE_IF );
+	}
+
+	return ret;
+}
+
+static inline void compile_expression_list( comp_state_t *state,
+                                            scm_value_t code,
+                                            scm_value_t args );
+
+static inline scm_value_t scm_car( scm_value_t value ){
+	scm_value_t ret = SCM_TYPE_NULL;
+
+	if ( is_pair( value )){
+		scm_pair_t *pair = get_pair( value );
+		ret = pair->car;
+	}
+
+	return ret;
+}
+
+static inline scm_value_t scm_cdr( scm_value_t value ){
+	scm_value_t ret = SCM_TYPE_NULL;
+
+	if ( is_pair( value )){
+		scm_pair_t *pair = get_pair( value );
+		ret = pair->cdr;
+	}
+
+	return ret;
+}
+
+static inline void compile_if_expression( comp_state_t *state,
+                                          scm_value_t code,
+                                          scm_value_t args )
+{
+	printf( "    | compiling if expression...\n" );
+
+	scm_pair_t *pair = get_pair( code );
+
+	scm_pair_t codebuf_pair = {
+		.car = scm_car( scm_cdr( code )),
+		.cdr = SCM_TYPE_NULL,
+	};
+
+	scm_value_t codebuf = tag_pair( &codebuf_pair );
+
+	compile_expression_list( state, codebuf, args );
+
+	instr_node_t *false_jump = add_instr_node( state, INSTR_JUMP_IF_FALSE, 0 );
+	unsigned first_expr = state->instr_ptr;
+
+	codebuf_pair.car = scm_car( scm_cdr( scm_cdr( code )));
+
+	compile_expression_list( state, codebuf, args );
+
+	instr_node_t *end_jump = add_instr_node( state, INSTR_JUMP, 0 );
+	unsigned second_expr = state->instr_ptr;
+
+	//codebuf_pair.car = scm_car( scm_cdr( scm_cdr( scm_cdr( code ))));
+	codebuf_pair.car = scm_car( scm_cdr( scm_cdr( scm_cdr( code ))));
+
+	compile_expression_list( state, codebuf, args );
+
+	unsigned if_end = state->instr_ptr;
+
+	false_jump->op = second_expr;
+	end_jump->op   = if_end;
+}
+
+static inline void compile_expression_list( comp_state_t *state,
+                                            scm_value_t code,
+                                            scm_value_t args )
 {
 	while ( is_pair( code )){
 		scm_pair_t *pair = get_pair( code );
@@ -81,49 +250,28 @@ static inline void recurse_code( comp_state_t *state,
 		if ( is_pair( pair->car )){
 			unsigned sp = state->stack_ptr;
 
-			printf( "    | starting call,"
-					"                   "
-					"starting sp: %u\n", sp );
-			recurse_code( state, pair->car, args );
-			printf( "    | applying call,"
-					"                   "
-					"setting sp to %u\n", sp + 1 );
+			if ( is_if_token( state->closure->env, scm_car( pair->car ))){
+				compile_if_expression( state, pair->car, args );
+
+			} else {
+
+				printf( "    | starting call,"
+						"                   "
+						"starting sp: %u\n", sp );
+
+				compile_expression_list( state, pair->car, args );
+
+				add_instr_node( state, INSTR_DO_CALL, sp );
+
+				printf( "    | applying call,"
+						"                   "
+						"setting sp to %u\n", sp + 1 );
+			}
 
 			state->stack_ptr = sp + 1;
 
 		} else {
-			printf( "    | got a value,  " );
-
-			if ( is_symbol( pair->car )){
-				int lookup = list_index( args, pair->car );
-
-				if ( lookup >= 0 ){
-					printf( "p   parameter %d  : ", lookup );
-
-				} else {
-					env_node_t *var = env_find_recurse( state->closure->env, pair->car );
-
-					if ( var ){
-						if ( is_special_form( var->value )){
-							printf( "s special form %u : ", get_run_type( var->value ));
-
-						} else {
-							unsigned n = add_closure_node( state, var, pair->car );
-							printf( "c closure ref %u  : ", n );
-						}
-
-					} else {
-						printf( "not found (TODO: error), " );
-					}
-				}
-			} else {
-				printf( "                   " );
-			}
-
-			debug_print( pair->car );
-			printf( "\n" );
-
-			state->stack_ptr++;
+			compile_value( state, args, pair->car );
 		}
 
 		code = pair->cdr;
@@ -139,11 +287,13 @@ scm_closure_t *vm_compile_closure( vm_t *vm, scm_closure_t *closure ){
 	debug_print( closure->args );
 	printf( "\n" );
 
+	memset( &state, 0, sizeof(state));
 	state.closure = closure;
 	state.closed_vars = NULL;
-	state.stack_ptr = list_length( closure->args );
+	state.stack_ptr = list_length( closure->args ) + 1;
 
-	recurse_code( &state, closure->definition, closure->args );
+	compile_expression_list( &state, closure->definition, closure->args );
+	add_instr_node( &state, INSTR_RETURN, 0 );
 
 	printf( "    | returning from closure\n" );
 
@@ -156,6 +306,31 @@ scm_closure_t *vm_compile_closure( vm_t *vm, scm_closure_t *closure ){
 
 		free( temp );
 		temp = next;
+	}
+
+	printf( "    | - instruction ptr: %u\n", state.instr_ptr );
+
+	unsigned i = 0;
+	for ( instr_node_t *node = state.instrs; node; ){
+		instr_node_t *next = node->next;
+		const char *opnames[] = {
+			"none",
+			"do_call",
+			"jump_if_false",
+			"jump",
+			"push_const",
+			"closure_ref",
+			"stack_ref",
+			"return",
+		};
+
+		printf( "    | - instruction %3u: %14s : %lu\n",
+			i++,
+			opnames[node->instr],
+			node->op );
+
+		free( node );
+		node = next;
 	}
 
 	printf( "    + done\n" );
