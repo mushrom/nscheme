@@ -231,8 +231,6 @@ bool vm_op_do_tailcall( vm_t *vm, uintptr_t arg ){
 bool vm_op_add( vm_t *vm, uintptr_t arg ){
 	scm_value_t sum = 0;
 
-	printf( "    did stuff at %s\n", __func__ );
-
 	for ( uintptr_t args = vm->argnum - 1; args; args-- ){
 		// no untagging/retagging needed because the lower bits
 		// of tagged integers are 0b00
@@ -251,8 +249,6 @@ bool vm_op_add( vm_t *vm, uintptr_t arg ){
 bool vm_op_sub( vm_t *vm, uintptr_t arg ){
 	scm_value_t sum = vm->stack[vm->sp - vm->argnum + 1];
 
-	printf( "    did stuff at %s\n", __func__ );
-
 	for ( uintptr_t args = vm->argnum - 2; args; args-- ){
 		sum -= vm_stack_pop( vm );
 	}
@@ -267,8 +263,6 @@ bool vm_op_sub( vm_t *vm, uintptr_t arg ){
 bool vm_op_mul( vm_t *vm, uintptr_t arg ){
 	uintptr_t sum = 1;
 
-	printf( "    did stuff at %s\n", __func__ );
-
 	for ( uintptr_t args = vm->argnum - 1; args; args-- ){
 		sum *= get_integer( vm_stack_pop( vm ));
 	}
@@ -281,8 +275,6 @@ bool vm_op_mul( vm_t *vm, uintptr_t arg ){
 
 bool vm_op_div( vm_t *vm, uintptr_t arg ){
 	uintptr_t sum = vm->stack[vm->sp - vm->argnum + 1];
-
-	printf( "    did stuff at %s\n", __func__ );
 
 	for ( uintptr_t args = vm->argnum - 2; args; args-- ){
 		uintptr_t temp = vm_stack_pop( vm );
