@@ -74,6 +74,7 @@ int main( int argc, char *argv[] ){
 
 	vm_t *vm = vm_init( );
 	repl( vm, foo );
+	vm_free( vm );
 
 	return 0;
 }

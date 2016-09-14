@@ -303,3 +303,11 @@ vm_t *vm_init( void ){
 
 	return ret;
 }
+
+void  vm_free( vm_t *vm ){
+	if ( vm ){
+		free( vm->stack );
+		free( vm->calls );
+		free( vm );
+	}
+}
