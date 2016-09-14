@@ -75,6 +75,7 @@ bool vm_op_closure_ref( vm_t *vm, uintptr_t arg );
 bool vm_op_stack_ref( vm_t *vm, uintptr_t arg );
 bool vm_op_push_const( vm_t *vm, uintptr_t arg );
 bool vm_op_do_call( vm_t *vm, uintptr_t arg );
+bool vm_op_do_tailcall( vm_t *vm, uintptr_t arg );
 
 bool vm_op_add( vm_t *vm, uintptr_t arg );
 bool vm_op_sub( vm_t *vm, uintptr_t arg );

@@ -89,9 +89,11 @@ void vm_call_apply( vm_t *vm ){
 
 	if ( is_closure( func )){
 		scm_closure_t *clsr = get_closure( func );
+		/*
 		printf( "    applying %s closure: %p\n",
 			((char *[]){"interpreted", "compiled"})[clsr->compiled],
 			clsr );
+			*/
 
 		vm->closure = clsr;
 
@@ -202,6 +204,24 @@ bool vm_op_do_call( vm_t *vm, uintptr_t arg ){
 	frame->runmode = vm->runmode;
 
 	vm->argnum = argnum;
+
+	vm_call_apply( vm );
+
+	return false;
+}
+
+bool vm_op_do_tailcall( vm_t *vm, uintptr_t arg ){
+	unsigned newstart  = vm->sp - vm->argnum + arg;
+	unsigned newargnum = vm->sp - newstart;
+	unsigned start     = vm->sp - vm->argnum;
+
+	for ( unsigned i = 0; i < newargnum; i++ ){
+		vm->stack[start + i] = vm->stack[newstart + i];
+	}
+
+	vm->sp     = start + newargnum;
+	vm->argnum = newargnum;
+	vm->ip     = 0;
 
 	vm_call_apply( vm );
 

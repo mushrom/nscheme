@@ -7,6 +7,7 @@ extern void debug_print( scm_value_t value );
 enum {
 	INSTR_NONE,
 	INSTR_DO_CALL,
+	INSTR_DO_TAILCALL,
 	INSTR_JUMP_IF_FALSE,
 	INSTR_JUMP,
 	INSTR_PUSH_CONSTANT,
@@ -177,7 +178,8 @@ static inline bool is_if_token( environment_t *env, scm_value_t sym ){
 
 static inline void compile_expression_list( comp_state_t *state,
                                             scm_value_t code,
-                                            scm_value_t args );
+                                            scm_value_t args,
+                                            bool tail );
 
 static inline scm_value_t scm_car( scm_value_t value ){
 	scm_value_t ret = SCM_TYPE_NULL;
@@ -203,7 +205,8 @@ static inline scm_value_t scm_cdr( scm_value_t value ){
 
 static inline void compile_if_expression( comp_state_t *state,
                                           scm_value_t code,
-                                          scm_value_t args )
+                                          scm_value_t args,
+                                          bool tail )
 {
 	printf( "    | compiling if expression...\n" );
 
@@ -214,12 +217,12 @@ static inline void compile_if_expression( comp_state_t *state,
 
 	scm_value_t codebuf = tag_pair( &codebuf_pair );
 
-	compile_expression_list( state, codebuf, args );
+	compile_expression_list( state, codebuf, args, false );
 
 	instr_node_t *false_jump = add_instr_node( state, INSTR_JUMP_IF_FALSE, 0 );
 	codebuf_pair.car = scm_car( scm_cdr( scm_cdr( code )));
 
-	compile_expression_list( state, codebuf, args );
+	compile_expression_list( state, codebuf, args, tail );
 
 	instr_node_t *end_jump = add_instr_node( state, INSTR_JUMP, 0 );
 	unsigned second_expr = state->instr_ptr;
@@ -227,7 +230,7 @@ static inline void compile_if_expression( comp_state_t *state,
 	//codebuf_pair.car = scm_car( scm_cdr( scm_cdr( scm_cdr( code ))));
 	codebuf_pair.car = scm_car( scm_cdr( scm_cdr( scm_cdr( code ))));
 
-	compile_expression_list( state, codebuf, args );
+	compile_expression_list( state, codebuf, args, tail );
 
 	unsigned if_end = state->instr_ptr;
 
@@ -237,16 +240,24 @@ static inline void compile_if_expression( comp_state_t *state,
 
 static inline void compile_expression_list( comp_state_t *state,
                                             scm_value_t code,
-                                            scm_value_t args )
+                                            scm_value_t args,
+                                            bool tail )
 {
 	while ( is_pair( code )){
 		scm_pair_t *pair = get_pair( code );
 
 		if ( is_pair( pair->car )){
 			unsigned sp = state->stack_ptr;
+			bool is_tail_call = tail && pair->cdr == SCM_TYPE_NULL;
+
+			if ( is_tail_call ){
+				printf( "    | have last expression in list: " );
+				debug_print( code );
+				printf( "\n" );
+			}
 
 			if ( is_if_token( state->closure->env, scm_car( pair->car ))){
-				compile_if_expression( state, pair->car, args );
+				compile_if_expression( state, pair->car, args, is_tail_call );
 
 			} else {
 
@@ -254,13 +265,22 @@ static inline void compile_expression_list( comp_state_t *state,
 						"                   "
 						"starting sp: %u\n", sp );
 
-				compile_expression_list( state, pair->car, args );
+				compile_expression_list( state, pair->car, args, false );
 
-				add_instr_node( state, INSTR_DO_CALL, sp );
+				if ( is_tail_call ){
+					add_instr_node( state, INSTR_DO_TAILCALL, sp );
 
-				printf( "    | applying call,"
-						"                   "
-						"setting sp to %u\n", sp + 1 );
+					printf( "    | doing tailcall,"
+							"                   "
+							"setting sp to %u\n", sp + 1 );
+
+				} else {
+					add_instr_node( state, INSTR_DO_CALL, sp );
+
+					printf( "    | applying call,"
+							"                   "
+							"setting sp to %u\n", sp + 1 );
+				}
 			}
 
 			state->stack_ptr = sp + 1;
@@ -309,6 +329,7 @@ static inline void store_instructions( comp_state_t *state,
 		const char *opnames[] = {
 			"none",
 			"do_call",
+			"do_tailcall",
 			"jump_if_false",
 			"jump",
 			"push_const",
@@ -320,6 +341,7 @@ static inline void store_instructions( comp_state_t *state,
 		vm_func opfuncs[] = {
 			NULL,
 			vm_op_do_call,
+			vm_op_do_tailcall,
 			vm_op_jump_if_false,
 			vm_op_jump,
 			vm_op_push_const,
@@ -356,7 +378,8 @@ scm_closure_t *vm_compile_closure( vm_t *vm, scm_closure_t *closure ){
 	state.closed_vars = NULL;
 	state.stack_ptr = list_length( closure->args ) + 1;
 
-	compile_expression_list( &state, closure->definition, closure->args );
+	compile_expression_list( &state, closure->definition,
+							 closure->args, true );
 	add_instr_node( &state, INSTR_RETURN, 0 );
 
 	printf( "    | returning from closure\n" );
