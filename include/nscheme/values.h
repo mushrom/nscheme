@@ -198,4 +198,29 @@ static inline bool is_special_form( scm_value_t value ){
 	return ret;
 }
 
+// pair accessor functions
+// TODO: return an error value instead of SCM_TYPE_NULL
+//       by default, or throw the error directly
+static inline scm_value_t scm_car( scm_value_t value ){
+	scm_value_t ret = SCM_TYPE_NULL;
+
+	if ( is_pair( value )){
+		scm_pair_t *pair = get_pair( value );
+		ret = pair->car;
+	}
+
+	return ret;
+}
+
+static inline scm_value_t scm_cdr( scm_value_t value ){
+	scm_value_t ret = SCM_TYPE_NULL;
+
+	if ( is_pair( value )){
+		scm_pair_t *pair = get_pair( value );
+		ret = pair->cdr;
+	}
+
+	return ret;
+}
+
 #endif

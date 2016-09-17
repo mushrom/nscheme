@@ -4,43 +4,6 @@
 
 extern void debug_print( scm_value_t value );
 
-enum {
-	INSTR_NONE,
-	INSTR_DO_CALL,
-	INSTR_DO_TAILCALL,
-	INSTR_JUMP_IF_FALSE,
-	INSTR_JUMP,
-	INSTR_PUSH_CONSTANT,
-	INSTR_CLOSURE_REF,
-	INSTR_STACK_REF,
-	INSTR_RETURN,
-};
-
-typedef struct closure_node {
-	scm_value_t sym;
-	struct closure_node *next;
-	env_node_t *var_ref;
-} closure_node_t;
-
-typedef struct instr_node {
-	unsigned instr;
-	uintptr_t op;
-
-	struct instr_node *prev;
-	struct instr_node *next;
-} instr_node_t;
-
-typedef struct comp_state {
-	scm_closure_t  *closure;
-	closure_node_t *closed_vars;
-	instr_node_t   *instrs;
-	instr_node_t   *last_instr;
-
-	unsigned stack_ptr;
-	unsigned closure_ptr;
-	unsigned instr_ptr;
-} comp_state_t;
-
 static inline unsigned list_length( scm_value_t value ){
 	unsigned length = 0;
 
@@ -164,44 +127,33 @@ static inline void compile_value( comp_state_t *state,
 	state->stack_ptr++;
 }
 
-static inline bool is_if_token( environment_t *env, scm_value_t sym ){
+static inline bool is_runtime_token( environment_t *env,
+                                     scm_value_t sym,
+                                     unsigned type )
+{
 	bool ret = false;
 
 	if ( is_symbol( sym )){
 		env_node_t *var = env_find_recurse( env, sym );
 
-		ret = var && var->value == tag_run_type( RUN_TYPE_IF );
+		ret = var && var->value == tag_run_type( type );
 	}
 
 	return ret;
+}
+
+static inline bool is_if_token( environment_t *env, scm_value_t sym ){
+	return is_runtime_token( env, sym, RUN_TYPE_IF );
+}
+
+static inline bool is_define_token( environment_t *env, scm_value_t sym ){
+	return is_runtime_token( env, sym, RUN_TYPE_DEFINE );
 }
 
 static inline void compile_expression_list( comp_state_t *state,
                                             scm_value_t code,
                                             scm_value_t args,
                                             bool tail );
-
-static inline scm_value_t scm_car( scm_value_t value ){
-	scm_value_t ret = SCM_TYPE_NULL;
-
-	if ( is_pair( value )){
-		scm_pair_t *pair = get_pair( value );
-		ret = pair->car;
-	}
-
-	return ret;
-}
-
-static inline scm_value_t scm_cdr( scm_value_t value ){
-	scm_value_t ret = SCM_TYPE_NULL;
-
-	if ( is_pair( value )){
-		scm_pair_t *pair = get_pair( value );
-		ret = pair->cdr;
-	}
-
-	return ret;
-}
 
 static inline void compile_if_expression( comp_state_t *state,
                                           scm_value_t code,
@@ -256,6 +208,7 @@ static inline void compile_expression_list( comp_state_t *state,
 				printf( "\n" );
 			}
 
+			//if ( is_if_token( state->closure->env, scm_car( pair->car ))){
 			if ( is_if_token( state->closure->env, scm_car( pair->car ))){
 				compile_if_expression( state, pair->car, args, is_tail_call );
 
@@ -364,6 +317,46 @@ static inline void store_instructions( comp_state_t *state,
 	}
 }
 
+static inline comp_node_t *wrap_comp_values( scm_value_t value ){
+	comp_node_t *ret = calloc( 1, sizeof( comp_node_t ));
+
+	ret->value = value;
+
+	if ( is_pair( value )){
+		scm_pair_t *pair = get_pair( value );
+
+		ret->car = wrap_comp_values( pair->car );
+		ret->cdr = wrap_comp_values( pair->cdr );
+	}
+
+	return ret;
+}
+
+static inline void dump_comp_values( comp_node_t *comp, unsigned level ){
+	if ( comp ){
+		printf( "    | > %*s node : 0x%lx", level * 2, "", comp->value );
+
+		if ( !is_pair( comp->value )){
+			printf( " : " );
+			debug_print( comp->value );
+		}
+
+		printf( "\n" );
+
+		dump_comp_values( comp->car, level + 1 );
+		dump_comp_values( comp->cdr, level );
+	}
+}
+
+static inline void free_comp_values( comp_node_t *comp ){
+	if ( comp ){
+		free_comp_values( comp->car );
+		free_comp_values( comp->cdr );
+	}
+
+	free( comp );
+}
+
 scm_closure_t *vm_compile_closure( vm_t *vm, scm_closure_t *closure ){
 	scm_closure_t *ret = NULL;
 	comp_state_t state;
@@ -377,6 +370,13 @@ scm_closure_t *vm_compile_closure( vm_t *vm, scm_closure_t *closure ){
 	state.closure = closure;
 	state.closed_vars = NULL;
 	state.stack_ptr = list_length( closure->args ) + 1;
+
+	comp_node_t *values = wrap_comp_values( closure->definition );
+
+	gen_scope( values, closure->env, NULL, closure->args, 1 );
+
+	dump_comp_values( values, 0 );
+	free_comp_values( values );
 
 	compile_expression_list( &state, closure->definition,
 							 closure->args, true );
