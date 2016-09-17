@@ -39,21 +39,37 @@ static inline int list_index( scm_value_t value, scm_value_t target ){
 	return index;
 }
 
-static inline unsigned add_closure_node( comp_state_t *state,
-                                         env_node_t   *node,
-                                         scm_value_t  sym )
+unsigned add_closure_node( comp_state_t *state,
+                           env_node_t   *node,
+                           scm_value_t  sym )
 {
 	unsigned ret = state->closure_ptr;
 
-	closure_node_t *new_node = calloc( 1, sizeof( closure_node_t ));
+	closure_node_t *temp = state->closed_vars;
+	unsigned i = ret - 1;
 
-	// TODO: search through closure list before adding a new node
-	//       to prevent having duplicate entries in the list
-	new_node->sym = sym;
-	new_node->next = state->closed_vars;
-	new_node->var_ref = node;
+	// search for an already existing entry to prevent
+	// duplicates in the closure list
+	//
+	// TODO: might want to use a more efficient search method
+	//       in the future, once large procedures start being
+	//       written
+	while ( temp ){
+		if ( temp->sym == sym ){
+			return i;
+		}
 
-	state->closed_vars = new_node;
+		i--;
+		temp = temp->next;
+	}
+
+	temp = calloc( 1, sizeof( closure_node_t ));
+
+	temp->sym = sym;
+	temp->next = state->closed_vars;
+	temp->var_ref = node;
+
+	state->closed_vars = temp;
 	state->closure_ptr++;
 
 	return ret;
@@ -84,44 +100,35 @@ static inline instr_node_t *add_instr_node( comp_state_t *state,
 }
 
 static inline void compile_value( comp_state_t *state,
-                                  scm_value_t args,
-                                  scm_value_t value )
+                                  comp_node_t *comp )
 {
 	printf( "    | got a value,  " );
 
-	if ( is_symbol( value )){
-		int lookup = list_index( args, value );
+	//if ( is_symbol( comp->value )){
+	if ( comp->node ){
+		unsigned loc = comp->node->location;
 
-		if ( lookup >= 0 ){
-			// add one to account for closure on stack before arguments
-			lookup += 1;
-			printf( "p   parameter %d  : ", lookup );
-			add_instr_node( state, INSTR_STACK_REF, lookup );
+		switch ( comp->node->type ){
+			case SCOPE_PARAMETER:
+				printf( "p   parameter %d  : ", loc );
+				add_instr_node( state, INSTR_STACK_REF, loc );
+				break;
 
-		} else {
-			env_node_t *var = env_find_recurse( state->closure->env, value );
+			case SCOPE_CLOSURE:
+				printf( "c closure ref %u  : ", loc );
+				add_instr_node( state, INSTR_CLOSURE_REF, loc );
+				break;
 
-			if ( var ){
-				if ( is_special_form( var->value )){
-					printf( "s special form %u : ", get_run_type( var->value ));
-
-				} else {
-					unsigned n = add_closure_node( state, var, value );
-					printf( "c closure ref %u  : ", n );
-					add_instr_node( state, INSTR_CLOSURE_REF, n );
-				}
-
-			} else {
-				printf( "not found (TODO: error), " );
-			}
+			default:
+				break;
 		}
 
 	} else {
 		printf( "                   " );
-		add_instr_node( state, INSTR_PUSH_CONSTANT, value );
+		add_instr_node( state, INSTR_PUSH_CONSTANT, comp->value );
 	}
 
-	debug_print( value );
+	debug_print( comp->value );
 	printf( "\n" );
 
 	state->stack_ptr++;
@@ -150,39 +157,45 @@ static inline bool is_define_token( environment_t *env, scm_value_t sym ){
 	return is_runtime_token( env, sym, RUN_TYPE_DEFINE );
 }
 
+static inline void compile_if_expression( comp_state_t *state,
+                                          comp_node_t *comp,
+                                          bool tail );
+
 static inline void compile_expression_list( comp_state_t *state,
-                                            scm_value_t code,
-                                            scm_value_t args,
+                                            comp_node_t *comp,
                                             bool tail );
 
 static inline void compile_if_expression( comp_state_t *state,
-                                          scm_value_t code,
-                                          scm_value_t args,
+                                          comp_node_t *comp,
                                           bool tail )
 {
-	printf( "    | compiling if expression...\n" );
+	printf( "    | compiling if expression (tail call: %u)...\n", tail );
 
-	scm_pair_t codebuf_pair = {
-		.car = scm_car( scm_cdr( code )),
-		.cdr = SCM_TYPE_NULL,
+	comp_node_t term = {
+		.car = NULL,
+		.cdr = NULL,
+		.value = SCM_TYPE_NULL,
 	};
 
-	scm_value_t codebuf = tag_pair( &codebuf_pair );
+	// TODO: check that list accesses are correct
+	comp_node_t codebuf = {
+		.cdr = &term,
+		.car = comp->cdr->car,
+	};
 
-	compile_expression_list( state, codebuf, args, false );
+	compile_expression_list( state, &codebuf, false );
 
 	instr_node_t *false_jump = add_instr_node( state, INSTR_JUMP_IF_FALSE, 0 );
-	codebuf_pair.car = scm_car( scm_cdr( scm_cdr( code )));
+	codebuf.car = comp->cdr->cdr->car;
 
-	compile_expression_list( state, codebuf, args, tail );
+	compile_expression_list( state, &codebuf, tail );
 
 	instr_node_t *end_jump = add_instr_node( state, INSTR_JUMP, 0 );
 	unsigned second_expr = state->instr_ptr;
 
-	//codebuf_pair.car = scm_car( scm_cdr( scm_cdr( scm_cdr( code ))));
-	codebuf_pair.car = scm_car( scm_cdr( scm_cdr( scm_cdr( code ))));
+	codebuf.car = comp->cdr->cdr->cdr->car;
 
-	compile_expression_list( state, codebuf, args, tail );
+	compile_expression_list( state, &codebuf, tail );
 
 	unsigned if_end = state->instr_ptr;
 
@@ -191,26 +204,25 @@ static inline void compile_if_expression( comp_state_t *state,
 }
 
 static inline void compile_expression_list( comp_state_t *state,
-                                            scm_value_t code,
-                                            scm_value_t args,
+                                            comp_node_t *comp,
                                             bool tail )
 {
-	while ( is_pair( code )){
-		scm_pair_t *pair = get_pair( code );
-
-		if ( is_pair( pair->car )){
+	while ( comp ){
+		if ( comp->car && is_pair( comp->car->value )) {
 			unsigned sp = state->stack_ptr;
-			bool is_tail_call = tail && pair->cdr == SCM_TYPE_NULL;
+
+			bool is_tail_call;
+			is_tail_call = tail && comp->cdr
+			            && comp->cdr->value == SCM_TYPE_NULL;
 
 			if ( is_tail_call ){
 				printf( "    | have last expression in list: " );
-				debug_print( code );
+				debug_print( comp->value );
 				printf( "\n" );
 			}
 
-			//if ( is_if_token( state->closure->env, scm_car( pair->car ))){
-			if ( is_if_token( state->closure->env, scm_car( pair->car ))){
-				compile_if_expression( state, pair->car, args, is_tail_call );
+			if ( is_if_token( state->closure->env, comp->car->car->value )){
+				compile_if_expression( state, comp->car, is_tail_call );
 
 			} else {
 
@@ -218,7 +230,7 @@ static inline void compile_expression_list( comp_state_t *state,
 						"                   "
 						"starting sp: %u\n", sp );
 
-				compile_expression_list( state, pair->car, args, false );
+				compile_expression_list( state, comp->car, false );
 
 				if ( is_tail_call ){
 					add_instr_node( state, INSTR_DO_TAILCALL, sp );
@@ -238,11 +250,11 @@ static inline void compile_expression_list( comp_state_t *state,
 
 			state->stack_ptr = sp + 1;
 
-		} else {
-			compile_value( state, args, pair->car );
+		} else if ( comp->car ){
+			compile_value( state, comp->car );
 		}
 
-		code = pair->cdr;
+		comp = comp->cdr;
 	}
 }
 
@@ -334,7 +346,8 @@ static inline comp_node_t *wrap_comp_values( scm_value_t value ){
 
 static inline void dump_comp_values( comp_node_t *comp, unsigned level ){
 	if ( comp ){
-		printf( "    | > %*s node : 0x%lx", level * 2, "", comp->value );
+		printf( "    | > %*s node : 0x%lx, scope : %p",
+			level * 2, "", comp->value, comp->scope );
 
 		if ( !is_pair( comp->value )){
 			printf( " : " );
@@ -368,24 +381,24 @@ scm_closure_t *vm_compile_closure( vm_t *vm, scm_closure_t *closure ){
 
 	memset( &state, 0, sizeof(state));
 	state.closure = closure;
+	state.env = closure->env;
 	state.closed_vars = NULL;
 	state.stack_ptr = list_length( closure->args ) + 1;
 
 	comp_node_t *values = wrap_comp_values( closure->definition );
 
-	gen_scope( values, closure->env, NULL, closure->args, 1 );
-
+	gen_scope( values, &state, NULL, closure->args, 1 );
 	dump_comp_values( values, 0 );
-	free_comp_values( values );
 
-	compile_expression_list( &state, closure->definition,
-							 closure->args, true );
+	compile_expression_list( &state, values, true );
 	add_instr_node( &state, INSTR_RETURN, 0 );
 
 	printf( "    | returning from closure\n" );
 
 	store_closed_vars( &state, closure );
 	store_instructions( &state, closure );
+
+	free_comp_values( values );
 
 	printf( "    + done\n" );
 

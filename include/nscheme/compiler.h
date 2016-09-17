@@ -42,6 +42,7 @@ typedef struct instr_node {
 
 typedef struct comp_state {
 	scm_closure_t  *closure;
+	environment_t  *env;
 	closure_node_t *closed_vars;
 	instr_node_t   *instrs;
 	instr_node_t   *last_instr;
@@ -70,13 +71,15 @@ typedef struct comp_node {
 	struct comp_node *cdr;
 	struct comp_node *car;
 	scope_t *scope;
-
 	scm_value_t value;
+
+	// scope info, only used for unquoted symbols
+	scope_node_t *node;
 } comp_node_t;
 
 scm_closure_t *vm_compile_closure( vm_t *vm, scm_closure_t *closure );
 
-void gen_scope( comp_node_t *comp,  environment_t *env, scope_t *cur_scope,
-				scm_value_t syms, unsigned sp );
+void gen_scope( comp_node_t*, comp_state_t*, scope_t*, scm_value_t, unsigned );
+unsigned add_closure_node( comp_state_t *, env_node_t *, scm_value_t );
 
 #endif
