@@ -4,8 +4,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-extern void debug_print( scm_value_t value );
-
 static inline void vm_step_compiled( vm_t *vm ){
 	vm_op_t *code = vm->closure->code + vm->ip;
 

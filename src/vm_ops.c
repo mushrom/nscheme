@@ -2,10 +2,9 @@
 #include <nscheme/vm_ops.h>
 #include <nscheme/parse.h>
 #include <nscheme/compiler.h>
+#include <nscheme/write.h>
 
 #include <stdlib.h>
-
-extern void debug_print( scm_value_t value );
 
 static scm_value_t vm_func_return_last( void ){
 	static scm_closure_t *ret = NULL;
@@ -130,7 +129,7 @@ void vm_call_apply( vm_t *vm ){
 
 	} else {
 		printf( "    dunno how to apply " );
-		debug_print( func );
+		write_value( func );
 		printf( "\n" );
 		vm->running = false;
 	}
@@ -462,7 +461,7 @@ bool vm_op_display( vm_t *vm, uintptr_t arg ){
 	}
 
 	scm_value_t value = vm_stack_pop( vm );
-	debug_print( value );
+	write_value( value );
 
 	return true;
 }

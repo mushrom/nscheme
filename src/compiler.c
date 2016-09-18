@@ -1,8 +1,7 @@
 #include <nscheme/compiler.h>
 #include <nscheme/env.h>
+#include <nscheme/write.h>
 #include <string.h>
-
-extern void debug_print( scm_value_t value );
 
 static inline unsigned list_length( scm_value_t value ){
 	unsigned length = 0;
@@ -128,7 +127,7 @@ static inline void compile_value( comp_state_t *state,
 		add_instr_node( state, INSTR_PUSH_CONSTANT, comp->value );
 	}
 
-	debug_print( comp->value );
+	write_value( comp->value );
 	printf( "\n" );
 
 	state->stack_ptr++;
@@ -217,7 +216,7 @@ static inline void compile_expression_list( comp_state_t *state,
 
 			if ( is_tail_call ){
 				printf( "    | have last expression in list: " );
-				debug_print( comp->value );
+				write_value( comp->value );
 				printf( "\n" );
 			}
 
@@ -351,7 +350,7 @@ static inline void dump_comp_values( comp_node_t *comp, unsigned level ){
 
 		if ( !is_pair( comp->value )){
 			printf( " : " );
-			debug_print( comp->value );
+			write_value( comp->value );
 		}
 
 		printf( "\n" );
@@ -376,7 +375,7 @@ scm_closure_t *vm_compile_closure( vm_t *vm, scm_closure_t *closure ){
 
 	printf( "    + compiling closure at %p\n", closure );
 	printf( "    | closure args: (%u) ", list_length( closure->args ));
-	debug_print( closure->args );
+	write_value( closure->args );
 	printf( "\n" );
 
 	memset( &state, 0, sizeof(state));
