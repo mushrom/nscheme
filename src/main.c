@@ -8,6 +8,9 @@ void debug_print( scm_value_t value ){
 	} else if ( is_boolean( value )){
 		printf( "#%c", get_boolean( value )? 't' : 'f' );
 
+	} else if ( is_character( value )){
+		printf( "#\\%c", get_character( value ));
+
 	} else if ( is_pair( value )) {
 		scm_pair_t *pair = get_pair( value );
 

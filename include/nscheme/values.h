@@ -104,6 +104,10 @@ static inline scm_value_t tag_boolean( bool boolean ){
 	return (boolean << 8) | SCM_TYPE_BOOLEAN;
 }
 
+static inline scm_value_t tag_character( unsigned character ){
+	return (character << 8) | SCM_TYPE_CHAR;
+}
+
 static inline scm_value_t construct_pair( scm_value_t car, scm_value_t cdr ){
 	scm_pair_t *pair = calloc( 1, sizeof( scm_pair_t ));
 
@@ -151,6 +155,10 @@ static inline bool is_boolean( scm_value_t value ){
 	return (value & SCM_MASK_BOOLEAN) == SCM_TYPE_BOOLEAN;
 }
 
+static inline bool is_character( scm_value_t value ){
+	return (value & SCM_MASK_CHAR) == SCM_TYPE_CHAR;
+}
+
 // data retrieving functions
 static inline long int get_integer( scm_value_t value ){
 	return value >> 2;
@@ -177,6 +185,10 @@ static inline void *get_closure( scm_value_t value ){
 }
 
 static inline bool get_boolean( scm_value_t value ){
+	return value >> 8;
+}
+
+static inline unsigned get_character( scm_value_t value ){
 	return value >> 8;
 }
 

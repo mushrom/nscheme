@@ -71,6 +71,10 @@ scm_value_t read_next_token( parse_state_t *state ){
 			if ( next == 't' || next == 'f' ){
 				return tag_boolean( next == 't' );
 
+			} else if ( next == '\\' ){
+				next = fgetc( state->fp );
+				return tag_character( next );
+
 			} else {
 				ungetc( c, state->fp );
 				return tag_parse_val( PARSE_TYPE_OCTOTHORPE );

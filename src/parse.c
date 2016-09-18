@@ -116,6 +116,7 @@ scm_value_t parse_token( parse_state_t *state ){
 	ACCEPT_AND_RETURN( state, is_symbol );
 	ACCEPT_AND_RETURN( state, is_eof );
 	ACCEPT_AND_RETURN( state, is_boolean );
+	ACCEPT_AND_RETURN( state, is_character );
 
 	if ( is_left_paren( peek_next_token( state ))) {
 		return parse_list( state );
