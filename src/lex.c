@@ -41,6 +41,13 @@ scm_value_t read_next_token( parse_state_t *state ){
 			state->linenum++;
 			state->charpos = 0;
 
+		} else if ( c == ';' ){
+			while ( c != '\n' && !feof( state->fp )){
+				c = fgetc( state->fp );
+			}
+
+			ungetc( c, state->fp );
+
 		} else if ( c == '(' ){
 			return tag_parse_val( PARSE_TYPE_LEFT_PAREN );
 
@@ -58,16 +65,16 @@ scm_value_t read_next_token( parse_state_t *state ){
 			ungetc( c, state->fp );
 			return read_symbol( state );
 
-        } else if ( c == '#' ){
-            int next = fgetc( state->fp );
+		} else if ( c == '#' ){
+			int next = fgetc( state->fp );
 
-            if ( next == 't' || next == 'f' ){
-                return tag_boolean( next == 't' );
+			if ( next == 't' || next == 'f' ){
+				return tag_boolean( next == 't' );
 
-            } else {
-                ungetc( c, state->fp );
-                return tag_parse_val( PARSE_TYPE_OCTOTHORPE );
-            }
+			} else {
+				ungetc( c, state->fp );
+				return tag_parse_val( PARSE_TYPE_OCTOTHORPE );
+			}
 
 		} else {
 			puts( "error!" );
