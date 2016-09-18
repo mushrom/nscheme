@@ -58,6 +58,17 @@ scm_value_t read_next_token( parse_state_t *state ){
 			ungetc( c, state->fp );
 			return read_symbol( state );
 
+        } else if ( c == '#' ){
+            int next = fgetc( state->fp );
+
+            if ( next == 't' || next == 'f' ){
+                return tag_boolean( next == 't' );
+
+            } else {
+                ungetc( c, state->fp );
+                return tag_parse_val( PARSE_TYPE_OCTOTHORPE );
+            }
+
 		} else {
 			puts( "error!" );
 			// TODO: error out here
