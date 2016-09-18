@@ -2,6 +2,29 @@
 #include <nscheme/write.h>
 #include <stdio.h>
 
+static inline void write_list( scm_pair_t *pair ){
+	printf( "(" );
+
+	for (;;) {
+		write_value( pair->car );
+
+		if ( is_pair( pair->cdr )){
+			pair = get_pair( pair->cdr );
+			printf( " " );
+
+		} else if ( !is_null( pair->cdr )){
+			printf( " . " );
+			write_value( pair->cdr );
+			break;
+
+		} else {
+			break;
+		}
+	}
+
+	printf( ")" );
+}
+
 void write_value( scm_value_t value ){
 	if ( is_integer( value )){
 		printf( "%lu", get_integer( value ));
@@ -14,15 +37,10 @@ void write_value( scm_value_t value ){
 
 	} else if ( is_pair( value )) {
 		scm_pair_t *pair = get_pair( value );
-
-		printf( "(" );
-		write_value( pair->car );
-		printf( " . " );
-		write_value( pair->cdr );
-		printf( ")" );
+		write_list( pair );
 
 	} else if ( is_symbol( value )){
-		printf( "%s [%p]", get_symbol( value ), get_symbol( value ));
+		printf( "%s", get_symbol( value ));
 
 	} else if ( is_null( value )) {
 		printf( "()" );
