@@ -133,29 +133,6 @@ static inline void compile_value( comp_state_t *state,
 	state->stack_ptr++;
 }
 
-static inline bool is_runtime_token( environment_t *env,
-                                     scm_value_t sym,
-                                     unsigned type )
-{
-	bool ret = false;
-
-	if ( is_symbol( sym )){
-		env_node_t *var = env_find_recurse( env, sym );
-
-		ret = var && var->value == tag_run_type( type );
-	}
-
-	return ret;
-}
-
-static inline bool is_if_token( environment_t *env, scm_value_t sym ){
-	return is_runtime_token( env, sym, RUN_TYPE_IF );
-}
-
-static inline bool is_define_token( environment_t *env, scm_value_t sym ){
-	return is_runtime_token( env, sym, RUN_TYPE_DEFINE );
-}
-
 static inline void compile_if_expression( comp_state_t *state,
                                           comp_node_t *comp,
                                           bool tail );
@@ -222,6 +199,9 @@ static inline void compile_expression_list( comp_state_t *state,
 
 			if ( is_if_token( state->closure->env, comp->car->car->value )){
 				compile_if_expression( state, comp->car, is_tail_call );
+
+			} else if ( is_define_statement( state->env, comp->car )){
+				printf( "    | have define statement, skipping for now...\n" );
 
 			} else {
 
@@ -386,7 +366,7 @@ scm_closure_t *vm_compile_closure( vm_t *vm, scm_closure_t *closure ){
 
 	comp_node_t *values = wrap_comp_values( closure->definition );
 
-	gen_scope( values, &state, NULL, closure->args, 1 );
+	gen_top_scope( values, &state, NULL, closure->args, 1 );
 	dump_comp_values( values, 0 );
 
 	compile_expression_list( &state, values, true );

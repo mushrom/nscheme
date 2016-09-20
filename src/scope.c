@@ -80,17 +80,45 @@ void scope_handle_symbol( comp_state_t *state,
 	}
 }
 
-void gen_scope( comp_node_t  *comp,
-                comp_state_t *state,
-                scope_t      *cur_scope,
-                scm_value_t  syms,
-                unsigned     sp )
+#include <nscheme/write.h>
+
+void gen_sub_scope( comp_node_t  *comp,
+                    comp_state_t *state,
+                    scope_t      *cur_scope,
+                    scm_value_t  syms,
+                    unsigned     sp )
+{
+	for ( ; comp; comp = comp->cdr ){
+		comp->scope = cur_scope;
+
+		if ( comp->car && is_symbol( comp->car->value )){
+			if ( is_if_token( state->env, comp->car->value )){
+				printf( "    | » have if statement\n" );
+
+			} else if ( is_define_statement( state->env, comp )){
+				printf( "    | » define statement only allowed at top-level!\n" );
+
+			} else {
+				scope_handle_symbol( state, cur_scope, comp );
+			}
+
+		} else if ( is_pair( comp->value )){
+			gen_sub_scope( comp->car, state, cur_scope, syms, sp++ );
+		}
+	}
+}
+
+void gen_top_scope( comp_node_t  *comp,
+                    comp_state_t *state,
+                    scope_t      *cur_scope,
+                    scm_value_t  syms,
+                    unsigned     sp )
 {
 	bool is_root_scope = !cur_scope;
 
-	if ( !cur_scope ){
-		cur_scope = calloc( 1, sizeof( scope_t ));
-	}
+	scope_t *new_scope = calloc( 1, sizeof( scope_t ));
+	new_scope->last = cur_scope;
+	cur_scope = new_scope;
 
 	for ( ; is_pair(syms); syms = scm_cdr( syms )){
 		unsigned type = is_root_scope? SCOPE_PARAMETER : SCOPE_LOCAL;
@@ -98,14 +126,9 @@ void gen_scope( comp_node_t  *comp,
 		scope_add_node( cur_scope, scm_car( syms ), type, sp++ );
 	}
 
-	for ( ; comp; comp = comp->cdr ){
-		comp->scope = cur_scope;
-
-		if ( comp->car && is_symbol( comp->car->value )){
-			scope_handle_symbol( state, cur_scope, comp );
-
-		} else if ( is_pair( comp->value )){
-			gen_scope( comp->car, state, cur_scope, syms, sp++ );
-		}
+	for ( ; is_define_statement( state->env, comp->car ); comp = comp->cdr ){
+		printf( "    | » found a define statement\n" );
 	}
+
+	gen_sub_scope( comp, state, cur_scope, SCM_TYPE_NULL, sp++ );
 }
