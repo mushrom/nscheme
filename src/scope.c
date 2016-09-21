@@ -41,6 +41,7 @@ scope_node_t *scope_add_node( scope_t     *scope,
 	}
 
 	node->location = location;
+	node->type     = type;
 
 	printf( "    | » added node %s:%u\n",
 			loc_strs[type], location );
@@ -126,8 +127,32 @@ void gen_top_scope( comp_node_t  *comp,
 		scope_add_node( cur_scope, scm_car( syms ), type, sp++ );
 	}
 
+	comp_node_t *start = comp;
+	unsigned orig_sp = sp;
+
+	// TODO: this doesn't handle (define (...) ...) expressions yet
 	for ( ; is_define_statement( state->env, comp->car ); comp = comp->cdr ){
-		printf( "    | » found a define statement\n" );
+		scm_value_t name = comp->car->cdr->car->value;
+
+		printf( "    | » found a define statement, name: " );
+		write_value( name );
+		printf( "\n" );
+
+		scope_add_node( cur_scope, name, SCOPE_LOCAL, sp++ );
+	}
+
+	comp = start;
+	sp = orig_sp;
+
+	for ( ; is_define_statement( state->env, comp->car ); comp = comp->cdr ){
+		scm_value_t name = comp->car->cdr->car->value;
+		comp_node_t *body = comp->car->cdr->cdr;
+
+		printf( "    | » generating scope for define statement " );
+		write_value( name );
+		printf( "\n" );
+
+		gen_sub_scope( body, state, cur_scope, SCM_TYPE_NULL, sp++ );
 	}
 
 	gen_sub_scope( comp, state, cur_scope, SCM_TYPE_NULL, sp++ );

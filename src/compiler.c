@@ -113,6 +113,11 @@ static inline void compile_value( comp_state_t *state,
 				add_instr_node( state, INSTR_STACK_REF, loc );
 				break;
 
+			case SCOPE_LOCAL:
+				printf( "c       local %u  : ", loc );
+				add_instr_node( state, INSTR_STACK_REF, loc );
+				break;
+
 			case SCOPE_CLOSURE:
 				printf( "c closure ref %u  : ", loc );
 				add_instr_node( state, INSTR_CLOSURE_REF, loc );
@@ -147,6 +152,8 @@ static inline void compile_if_expression( comp_state_t *state,
 {
 	printf( "    | compiling if expression (tail call: %u)...\n", tail );
 
+	unsigned sp;
+
 	comp_node_t term = {
 		.car = NULL,
 		.cdr = NULL,
@@ -159,11 +166,13 @@ static inline void compile_if_expression( comp_state_t *state,
 		.car = comp->cdr->car,
 	};
 
+	sp = state->stack_ptr;
 	compile_expression_list( state, &codebuf, false );
 
 	instr_node_t *false_jump = add_instr_node( state, INSTR_JUMP_IF_FALSE, 0 );
 	codebuf.car = comp->cdr->cdr->car;
 
+	state->stack_ptr = sp;
 	compile_expression_list( state, &codebuf, tail );
 
 	instr_node_t *end_jump = add_instr_node( state, INSTR_JUMP, 0 );
@@ -171,12 +180,15 @@ static inline void compile_if_expression( comp_state_t *state,
 
 	codebuf.car = comp->cdr->cdr->cdr->car;
 
+	state->stack_ptr = sp;
 	compile_expression_list( state, &codebuf, tail );
 
 	unsigned if_end = state->instr_ptr;
 
 	false_jump->op = second_expr;
 	end_jump->op   = if_end;
+
+	printf( "    | done compiling if expression\n" );
 }
 
 static inline void compile_expression_list( comp_state_t *state,
@@ -201,7 +213,12 @@ static inline void compile_expression_list( comp_state_t *state,
 				compile_if_expression( state, comp->car, is_tail_call );
 
 			} else if ( is_define_statement( state->env, comp->car )){
-				printf( "    | have define statement, skipping for now...\n" );
+				// TODO: doesn't handle (define (...) ...) expressions yet,
+				//       will need to make a seperate function to handle define
+				//       compilation
+				printf( "    | emitting definition, sp: %u\n", sp );
+				compile_expression_list( state, comp->car->cdr->cdr, false );
+				printf( "    | done definition, sp: %u\n", sp );
 
 			} else {
 

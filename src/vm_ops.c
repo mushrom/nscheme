@@ -155,7 +155,7 @@ bool vm_op_jump( vm_t *vm, uintptr_t arg ){
 }
 
 bool vm_op_jump_if_false( vm_t *vm, uintptr_t arg ){
-	scm_value_t value = vm_stack_peek( vm );
+	scm_value_t value = vm_stack_pop( vm );
 
 	if ( value == tag_boolean( false )){
 		vm->ip = arg;
