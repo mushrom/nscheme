@@ -60,6 +60,7 @@ static inline void vm_call_return( vm_t *vm ){
 	}
 }
 
+scm_value_t vm_func_return_last( void );
 scm_value_t vm_func_intern_define( void );
 scm_value_t vm_func_intern_set( void );
 scm_value_t vm_func_intern_if( void );

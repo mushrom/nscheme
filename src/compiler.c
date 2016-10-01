@@ -209,7 +209,7 @@ static inline void compile_expression_list( comp_state_t *state,
 				printf( "\n" );
 			}
 
-			if ( is_if_token( state->closure->env, comp->car->car->value )){
+			if ( is_if_statement( state->closure->env, comp->car )){
 				compile_if_expression( state, comp->car, is_tail_call );
 
 			} else if ( is_define_statement( state->env, comp->car )){
@@ -219,6 +219,11 @@ static inline void compile_expression_list( comp_state_t *state,
 				printf( "    | emitting definition, sp: %u\n", sp );
 				compile_expression_list( state, comp->car->cdr->cdr, false );
 				printf( "    | done definition, sp: %u\n", sp );
+
+			} else if ( is_begin_statement( state->env, comp->car )){
+				printf( "    | emitting begin form 1, sp: %u\n", sp );
+				compile_expression_list( state, comp->car->cdr, is_tail_call );
+				printf( "    | done begin, sp: %u\n", sp );
 
 			} else {
 

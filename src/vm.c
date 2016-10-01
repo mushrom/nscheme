@@ -111,6 +111,14 @@ static inline void vm_handle_if( vm_t *vm,
 	vm_call_eval( vm, test );
 }
 
+static inline void vm_handle_begin( vm_t *vm,
+                                    scm_value_t form,
+                                    scm_value_t expr )
+{
+	vm_stack_push( vm, vm_func_return_last( ));
+	vm->ptr = expr;
+}
+
 static void vm_handle_sform( vm_t *vm, scm_value_t form, scm_value_t expr ){
 	unsigned type = get_run_type( form );
 
@@ -126,6 +134,10 @@ static void vm_handle_sform( vm_t *vm, scm_value_t form, scm_value_t expr ){
 
 		case RUN_TYPE_IF:
 			vm_handle_if( vm, form, expr );
+			break;
+
+		case RUN_TYPE_BEGIN:
+			vm_handle_begin( vm, form, expr );
 			break;
 
 		default:
@@ -298,6 +310,9 @@ vm_t *vm_init( void ){
 
 	foo = tag_symbol( store_symbol( strdup( "if" )));
 	env_set( ret->env, foo, tag_run_type( RUN_TYPE_IF ));
+
+	foo = tag_symbol( store_symbol( strdup( "begin" )));
+	env_set( ret->env, foo, tag_run_type( RUN_TYPE_BEGIN ));
 
 	return ret;
 }

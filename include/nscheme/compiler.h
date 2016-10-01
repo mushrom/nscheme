@@ -105,12 +105,31 @@ static inline bool is_define_token( environment_t *env, scm_value_t sym ){
 	return is_runtime_token( env, sym, RUN_TYPE_DEFINE );
 }
 
-static inline bool is_define_statement( environment_t *env,
-                                        comp_node_t *node )
+static inline bool is_begin_token( environment_t *env, scm_value_t sym ){
+	return is_runtime_token( env, sym, RUN_TYPE_BEGIN );
+}
+
+typedef bool (*runtype_checker)( environment_t *env, scm_value_t sym );
+
+static inline bool is_run_statement( environment_t *env,
+                                     comp_node_t *node,
+                                     runtype_checker is_type )
 {
 	return node && node->car
 		&& is_symbol( node->car->value )
-		&& is_define_token( env, node->car->value );
+		&& is_type( env, node->car->value );
+}
+
+static inline bool is_if_statement( environment_t *env, comp_node_t *node ){
+	return is_run_statement( env, node, is_if_token );
+}
+
+static inline bool is_define_statement( environment_t *env, comp_node_t *node ){
+	return is_run_statement( env, node, is_define_token );
+}
+
+static inline bool is_begin_statement( environment_t *env, comp_node_t *node ){
+	return is_run_statement( env, node, is_begin_token );
 }
 
 #endif

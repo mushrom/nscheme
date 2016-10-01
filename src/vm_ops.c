@@ -6,7 +6,7 @@
 
 #include <stdlib.h>
 
-static scm_value_t vm_func_return_last( void ){
+scm_value_t vm_func_return_last( void ){
 	static scm_closure_t *ret = NULL;
 
 	if ( !ret ){
