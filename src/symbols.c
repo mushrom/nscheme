@@ -76,3 +76,19 @@ const char *store_symbol( const char *symbol ){
 
 	return symbol;
 }
+
+const char *try_store_symbol( const char *symbol ){
+	const char *ret = lookup_symbol_address( symbol );
+
+	if ( !ret ){
+		size_t len = strlen( symbol );
+		char *temp = malloc( len + 1 );
+
+		strncpy( temp, symbol, len );
+		ret = temp;
+
+		store_symbol( ret );
+	}
+
+	return ret;
+}

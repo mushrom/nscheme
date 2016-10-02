@@ -31,6 +31,7 @@ enum parse_types {
 	PARSE_TYPE_OCTOTHORPE,
 	PARSE_TYPE_PERIOD,
 	PARSE_TYPE_EOF,
+	PARSE_TYPE_APOSTROPHE,
 };
 
 enum runtime_types {
@@ -41,6 +42,7 @@ enum runtime_types {
 	RUN_TYPE_SET,
 	RUN_TYPE_IF,
 	RUN_TYPE_BEGIN,
+	RUN_TYPE_QUOTE,
 	RUN_TYPE_EVAL,
 	RUN_TYPE_SET_PTR,
 };
@@ -206,6 +208,7 @@ static inline bool is_special_form( scm_value_t value ){
 		   || type == RUN_TYPE_SET
 		   || type == RUN_TYPE_IF
 		   || type == RUN_TYPE_BEGIN
+		   || type == RUN_TYPE_QUOTE
 		   ;
 	}
 

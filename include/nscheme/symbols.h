@@ -5,5 +5,6 @@
 
 const char *store_symbol( const char *symbol );
 const char *lookup_symbol_address( const char *symbol );
+const char *try_store_symbol( const char *symbol );
 
 #endif

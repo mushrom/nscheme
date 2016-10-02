@@ -54,6 +54,9 @@ scm_value_t read_next_token( parse_state_t *state ){
 		} else if ( c == ')' ){
 			return tag_parse_val( PARSE_TYPE_RIGHT_PAREN );
 
+		} else if ( c == '\'' ){
+			return tag_parse_val( PARSE_TYPE_APOSTROPHE );
+
 		} else if ( matches( c, WHITESPACE )){
 			state->charpos++;
 
@@ -106,7 +109,6 @@ scm_value_t read_number( parse_state_t *state ){
 }
 
 scm_value_t read_symbol( parse_state_t *state ){
-	const char *ret;
 	unsigned i = 0;
 	int c = fgetc( state->fp );
 	char buf[32];
@@ -119,10 +121,5 @@ scm_value_t read_symbol( parse_state_t *state ){
 	buf[i] = 0;
 	ungetc( c, state->fp );
 
-	if ( !( ret = lookup_symbol_address( buf ))){
-		ret = strdup( buf );
-		store_symbol( ret );
-	}
-
-	return tag_symbol( ret );
+	return tag_symbol( try_store_symbol( buf ));
 }

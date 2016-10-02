@@ -15,7 +15,7 @@ framework will be coming soon.
     - [x] handle basic types (ints, characters, null, ...)
     - [ ] handle unicode
         - [ ] generic utf* handling or just utf8?
-    - [ ] handle quoted forms
+    - [x] handle quoted forms
     - [ ] handle dotted form pairs, (a . b)
     - [ ] handle vectors
     - [ ] handle strings

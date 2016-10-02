@@ -54,10 +54,13 @@ void write_value( scm_value_t value ){
 	} else if ( is_run_type( value )){
 		const char *strs[] = {
 			"<none>", "lambda", "define", "define-syntax", "set!",
-			"if", "begin", "eval",
+			"if", "begin", "quote", "eval",
 		};
 
 		printf( "#<runtime type:%s>", strs[get_run_type( value )]);
+
+	} else if ( is_eof( value )){
+		printf( "#<end of file>" );
 
 	} else {
 		printf( "#<unknown>" );

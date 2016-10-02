@@ -104,12 +104,30 @@ static inline bool is_right_paren( scm_value_t value ){
 		&& get_parse_val( value ) == PARSE_TYPE_RIGHT_PAREN;
 }
 
+static inline bool is_apostrophe( scm_value_t value ){
+	return is_parse_val( value )
+		&& get_parse_val( value ) == PARSE_TYPE_APOSTROPHE;
+}
+
 static inline bool is_none_type( scm_value_t value ){
 	return is_parse_val( value )
 		&& get_parse_val( value ) == PARSE_TYPE_NONE;
 }
 
 scm_value_t parse_list( parse_state_t *state );
+scm_value_t parse_expression( parse_state_t *state );
+
+scm_value_t parse_quoted( parse_state_t *state ){
+	scm_value_t quoted = tag_symbol( try_store_symbol( "quote" ));
+
+	parse_expect( state, is_apostrophe, "apostrophe" );
+
+	return construct_pair(
+		quoted,
+		construct_pair(
+			parse_expression( state ),
+			SCM_TYPE_NULL ));
+}
 
 scm_value_t parse_token( parse_state_t *state ){
 	ACCEPT_AND_RETURN( state, is_integer );
@@ -120,6 +138,10 @@ scm_value_t parse_token( parse_state_t *state ){
 
 	if ( is_left_paren( peek_next_token( state ))) {
 		return parse_list( state );
+	}
+
+	if ( is_apostrophe( peek_next_token( state ))){
+		return parse_quoted( state );
 	}
 
 	return tag_parse_val( PARSE_TYPE_NONE );
