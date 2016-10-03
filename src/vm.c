@@ -298,6 +298,7 @@ vm_t *vm_init( void ){
 	vm_add_arithmetic_op( ret, "eq?", vm_op_equal );
 	vm_add_arithmetic_op( ret, "<", vm_op_lessthan );
 	vm_add_arithmetic_op( ret, ">", vm_op_greaterthan );
+	vm_add_arithmetic_op( ret, "null?", vm_op_is_null );
 
 	vm_add_arithmetic_op( ret, "display", vm_op_display );
 	vm_add_arithmetic_op( ret, "newline", vm_op_newline );

@@ -394,6 +394,21 @@ bool vm_op_greaterthan( vm_t *vm, uintptr_t arg ){
 	return true;
 }
 
+bool vm_op_is_null( vm_t *vm, uintptr_t arg ){
+	if ( vm->argnum != 2 ){
+		printf( "[%s] Not enough arguments, have %u but need 2\n",
+			__func__, vm->argnum );
+
+		return true;
+	}
+
+	scm_value_t value = vm_stack_pop( vm );
+	vm_stack_pop( vm );
+	vm_stack_push( vm, tag_boolean( value == SCM_TYPE_NULL ));
+
+	return true;
+}
+
 bool vm_op_intern_define( vm_t *vm, uintptr_t arg ){
 	if ( vm->argnum != 3 ){
 		puts( "not enough args man" );

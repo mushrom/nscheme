@@ -90,6 +90,7 @@ bool vm_op_cdr( vm_t *vm, uintptr_t arg );
 bool vm_op_lessthan( vm_t *vm, uintptr_t arg );
 bool vm_op_equal( vm_t *vm, uintptr_t arg );
 bool vm_op_greaterthan( vm_t *vm, uintptr_t arg );
+bool vm_op_is_null( vm_t *vm, uintptr_t arg );
 
 bool vm_op_intern_define( vm_t *vm, uintptr_t arg );
 bool vm_op_intern_set( vm_t *vm, uintptr_t arg );
