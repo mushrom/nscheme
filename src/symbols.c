@@ -84,7 +84,7 @@ const char *try_store_symbol( const char *symbol ){
 		size_t len = strlen( symbol );
 		char *temp = malloc( len + 1 );
 
-		strncpy( temp, symbol, len );
+		strncpy( temp, symbol, len + 1 );
 		ret = temp;
 
 		store_symbol( ret );
