@@ -64,8 +64,8 @@ framework will be coming soon.
     - [ ] FFI
         - [ ] maybe look at how python does it, or lua or chicken or something
 - [ ] command line interface
-    - [ ] add help output
-    - [ ] add file argument
+    - [x] add help output
+    - [x] add file argument
     - [ ] allow specifying options like environment, modules, output location as arguments
 - [ ] testing
     - [ ] I/O tests
