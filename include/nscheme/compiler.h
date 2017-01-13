@@ -4,6 +4,15 @@
 #include <nscheme/vm.h>
 #include <nscheme/vm_ops.h>
 
+// macros for toggling debug output
+#ifdef VM_VERBOSE_COMPILE
+#define DEBUG_PRINTF( ... )   printf( __VA_ARGS__ );
+#define DEBUG_WRITEVAL( ... ) write_value( __VA_ARGS__ );
+#else
+#define DEBUG_PRINTF( ... )   /* __VA_ARGS__ */
+#define DEBUG_WRITEVAL( ... ) /* __VA_ARGS__ */
+#endif
+
 enum {
 	INSTR_NONE,
 	INSTR_DO_CALL,

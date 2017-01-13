@@ -101,7 +101,7 @@ static inline instr_node_t *add_instr_node( comp_state_t *state,
 static inline void compile_value( comp_state_t *state,
                                   comp_node_t *comp )
 {
-	printf( "    | got a value,  " );
+	DEBUG_PRINTF( "    | got a value,  " );
 
 	//if ( is_symbol( comp->value )){
 	if ( comp->node ){
@@ -109,17 +109,17 @@ static inline void compile_value( comp_state_t *state,
 
 		switch ( comp->node->type ){
 			case SCOPE_PARAMETER:
-				printf( "p   parameter %d  : ", loc );
+				DEBUG_PRINTF( "p   parameter %d  : ", loc );
 				add_instr_node( state, INSTR_STACK_REF, loc );
 				break;
 
 			case SCOPE_LOCAL:
-				printf( "c       local %u  : ", loc );
+				DEBUG_PRINTF( "c       local %u  : ", loc );
 				add_instr_node( state, INSTR_STACK_REF, loc );
 				break;
 
 			case SCOPE_CLOSURE:
-				printf( "c closure ref %u  : ", loc );
+				DEBUG_PRINTF( "c closure ref %u  : ", loc );
 				add_instr_node( state, INSTR_CLOSURE_REF, loc );
 				break;
 
@@ -128,12 +128,12 @@ static inline void compile_value( comp_state_t *state,
 		}
 
 	} else {
-		printf( "                   " );
+		DEBUG_PRINTF( "                   " );
 		add_instr_node( state, INSTR_PUSH_CONSTANT, comp->value );
 	}
 
-	write_value( comp->value );
-	printf( "\n" );
+	DEBUG_WRITEVAL( comp->value );
+	DEBUG_PRINTF( "\n" );
 
 	state->stack_ptr++;
 }
@@ -150,7 +150,7 @@ static inline void compile_if_expression( comp_state_t *state,
                                           comp_node_t *comp,
                                           bool tail )
 {
-	printf( "    | compiling if expression (tail call: %u)...\n", tail );
+	DEBUG_PRINTF( "    | compiling if expression (tail call: %u)...\n", tail );
 
 	unsigned sp;
 
@@ -188,7 +188,7 @@ static inline void compile_if_expression( comp_state_t *state,
 	false_jump->op = second_expr;
 	end_jump->op   = if_end;
 
-	printf( "    | done compiling if expression\n" );
+	DEBUG_PRINTF( "    | done compiling if expression\n" );
 }
 
 static inline void compile_expression_list( comp_state_t *state,
@@ -204,9 +204,9 @@ static inline void compile_expression_list( comp_state_t *state,
 			            && comp->cdr->value == SCM_TYPE_NULL;
 
 			if ( is_tail_call ){
-				printf( "    | have last expression in list: " );
-				write_value( comp->value );
-				printf( "\n" );
+				DEBUG_PRINTF( "    | have last expression in list: " );
+				DEBUG_WRITEVAL( comp->value );
+				DEBUG_PRINTF( "\n" );
 			}
 
 			if ( is_if_statement( state->closure->env, comp->car )){
@@ -216,18 +216,18 @@ static inline void compile_expression_list( comp_state_t *state,
 				// TODO: doesn't handle (define (...) ...) expressions yet,
 				//       will need to make a seperate function to handle define
 				//       compilation
-				printf( "    | emitting definition, sp: %u\n", sp );
+				DEBUG_PRINTF( "    | emitting definition, sp: %u\n", sp );
 				compile_expression_list( state, comp->car->cdr->cdr, false );
-				printf( "    | done definition, sp: %u\n", sp );
+				DEBUG_PRINTF( "    | done definition, sp: %u\n", sp );
 
 			} else if ( is_begin_statement( state->env, comp->car )){
-				printf( "    | emitting begin form 1, sp: %u\n", sp );
+				DEBUG_PRINTF( "    | emitting begin form 1, sp: %u\n", sp );
 				compile_expression_list( state, comp->car->cdr, is_tail_call );
-				printf( "    | done begin, sp: %u\n", sp );
+				DEBUG_PRINTF( "    | done begin, sp: %u\n", sp );
 
 			} else {
 
-				printf( "    | starting call,"
+				DEBUG_PRINTF( "    | starting call,"
 						"                   "
 						"starting sp: %u\n", sp );
 
@@ -236,14 +236,14 @@ static inline void compile_expression_list( comp_state_t *state,
 				if ( is_tail_call ){
 					add_instr_node( state, INSTR_DO_TAILCALL, sp );
 
-					printf( "    | doing tailcall,"
+					DEBUG_PRINTF( "    | doing tailcall,"
 							"                   "
 							"setting sp to %u\n", sp + 1 );
 
 				} else {
 					add_instr_node( state, INSTR_DO_CALL, sp );
 
-					printf( "    | applying call,"
+					DEBUG_PRINTF( "    | applying call,"
 							"                   "
 							"setting sp to %u\n", sp + 1 );
 				}
@@ -262,7 +262,7 @@ static inline void compile_expression_list( comp_state_t *state,
 static inline void store_closed_vars( comp_state_t *state,
                                       scm_closure_t *closure )
 {
-	printf( "    | - closure ptr: %u\n", state->closure_ptr );
+	DEBUG_PRINTF( "    | - closure ptr: %u\n", state->closure_ptr );
 
 	closure->closures = calloc( 1, sizeof( env_node_t *[state->closure_ptr] ));
 
@@ -272,7 +272,7 @@ static inline void store_closed_vars( comp_state_t *state,
 	while ( temp ){
 		closure_node_t *next = temp->next;
 
-		printf( "    | - closure ref: %p : %s\n",
+		DEBUG_PRINTF( "    | - closure ref: %p : %s\n",
 			temp->var_ref, get_symbol( temp->sym ));
 
 		closure->closures[i--] = temp->var_ref;
@@ -285,7 +285,7 @@ static inline void store_closed_vars( comp_state_t *state,
 static inline void store_instructions( comp_state_t *state,
                                        scm_closure_t *closure )
 {
-	printf( "    | - instruction ptr: %u\n", state->instr_ptr );
+	DEBUG_PRINTF( "    | - instruction ptr: %u\n", state->instr_ptr );
 
 	closure->code = calloc( 1, sizeof( vm_op_t[state->instr_ptr] ));
 
@@ -318,9 +318,10 @@ static inline void store_instructions( comp_state_t *state,
 
 		closure->code[i].func = opfuncs[node->instr];
 		closure->code[i].arg  = node->op;
+		i += 1;
 
-		printf( "    | - instruction %3u: %14s (%p) : %lu\n",
-			i++,
+		DEBUG_PRINTF( "    | - instruction %3u: %14s (%p) : %lu\n",
+			i,
 			opnames[node->instr],
 			opfuncs[node->instr],
 			node->op );
@@ -347,15 +348,15 @@ static inline comp_node_t *wrap_comp_values( scm_value_t value ){
 
 static inline void dump_comp_values( comp_node_t *comp, unsigned level ){
 	if ( comp ){
-		printf( "    | > %*s node : 0x%lx, scope : %p",
+		DEBUG_PRINTF( "    | > %*s node : 0x%lx, scope : %p",
 			level * 2, "", comp->value, comp->scope );
 
 		if ( !is_pair( comp->value )){
-			printf( " : " );
-			write_value( comp->value );
+			DEBUG_PRINTF( " : " );
+			DEBUG_WRITEVAL( comp->value );
 		}
 
-		printf( "\n" );
+		DEBUG_PRINTF( "\n" );
 
 		dump_comp_values( comp->car, level + 1 );
 		dump_comp_values( comp->cdr, level );
@@ -375,10 +376,10 @@ scm_closure_t *vm_compile_closure( vm_t *vm, scm_closure_t *closure ){
 	scm_closure_t *ret = NULL;
 	comp_state_t state;
 
-	printf( "    + compiling closure at %p\n", closure );
-	printf( "    | closure args: (%u) ", list_length( closure->args ));
-	write_value( closure->args );
-	printf( "\n" );
+	DEBUG_PRINTF( "    + compiling closure at %p\n", closure );
+	DEBUG_PRINTF( "    | closure args: (%u) ", list_length( closure->args ));
+	DEBUG_WRITEVAL( closure->args );
+	DEBUG_PRINTF( "\n" );
 
 	memset( &state, 0, sizeof(state));
 	state.closure = closure;
@@ -394,14 +395,14 @@ scm_closure_t *vm_compile_closure( vm_t *vm, scm_closure_t *closure ){
 	compile_expression_list( &state, values, true );
 	add_instr_node( &state, INSTR_RETURN, 0 );
 
-	printf( "    | returning from closure\n" );
+	DEBUG_PRINTF( "    | returning from closure\n" );
 
 	store_closed_vars( &state, closure );
 	store_instructions( &state, closure );
 
 	free_comp_values( values );
 
-	printf( "    + done\n" );
+	DEBUG_PRINTF( "    + done\n" );
 
 	closure->compiled = true;
 
