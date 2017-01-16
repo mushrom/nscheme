@@ -1,0 +1,40 @@
+#!/bin/sh
+
+CONFIG=config.mk
+
+KEY=1
+VALUE=2
+
+optget () {
+	echo $2 | cut -d= -f$1
+}
+
+# initialize empty config file
+cat /dev/null > $CONFIG
+
+for arg in $@; do
+	_key=`optget $KEY   $arg`
+	_value=`optget $VALUE $arg`
+
+	case $_key in
+		--help|-h)
+			cat <<- END_HELP
+				This script sets configuration values for nscheme.
+
+				Options:
+				  -h,  --help             Display this help message and exit.
+				       --prefix=[path]    Set the installation root to the given path
+				       --sysroot=[path]   Set the path for the system root.
+				  -X   --verbose-compile  Enable verbose compilation output.      
+			END_HELP
+			;;
+
+		-X|--verbose-compile)
+			echo 'CONFIG_OPTS += -DVM_VERBOSE_COMPILE' >> $CONFIG
+			;;
+
+		*)
+			echo "configure: warning: unknown option $_key"
+			;;
+	esac
+done

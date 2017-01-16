@@ -1,3 +1,5 @@
+-include config.mk
+
 SRC    = $(wildcard src/*.c)
 OBJ    = $(SRC:.c=.o)
 DEPS   = $(OBJ:.o=.d)
