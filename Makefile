@@ -15,3 +15,8 @@ clean:
 	rm -f nscheme
 	rm -f $(OBJ)
 	rm -f $(DEPS)
+	rm -rf tests/output
+
+.PHONY: test
+test: nscheme
+	cd tests; ./dotests.sh
