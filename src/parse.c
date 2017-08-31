@@ -109,6 +109,11 @@ static inline bool is_apostrophe( scm_value_t value ){
 		&& get_parse_val( value ) == PARSE_TYPE_APOSTROPHE;
 }
 
+static inline bool is_period( scm_value_t value ){
+	return is_parse_val( value )
+		&& get_parse_val( value ) == PARSE_TYPE_PERIOD;
+}
+
 static inline bool is_none_type( scm_value_t value ){
 	return is_parse_val( value )
 		&& get_parse_val( value ) == PARSE_TYPE_NONE;
@@ -135,6 +140,7 @@ scm_value_t parse_token( parse_state_t *state ){
 	ACCEPT_AND_RETURN( state, is_eof );
 	ACCEPT_AND_RETURN( state, is_boolean );
 	ACCEPT_AND_RETURN( state, is_character );
+	ACCEPT_AND_RETURN( state, is_period );
 
 	if ( is_left_paren( peek_next_token( state ))) {
 		return parse_list( state );
@@ -147,10 +153,24 @@ scm_value_t parse_token( parse_state_t *state ){
 	return tag_parse_val( PARSE_TYPE_NONE );
 }
 
-scm_value_t parse_list_tokens( parse_state_t *state ){
+scm_value_t parse_pair_token( parse_state_t *state ){
 	scm_value_t temp = parse_token( state );
 
 	if ( !is_none_type( temp )){
+		return temp;
+
+	} else {
+		return SCM_TYPE_NULL;
+	}
+}
+
+scm_value_t parse_list_tokens( parse_state_t *state ){
+	scm_value_t temp = parse_token( state );
+
+	if ( is_period( temp )){
+		return parse_pair_token( state );
+
+	} else if ( !is_none_type( temp )){
 		return construct_pair( temp, parse_list_tokens( state ));
 
 	} else {

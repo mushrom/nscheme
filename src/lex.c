@@ -54,6 +54,9 @@ scm_value_t read_next_token( parse_state_t *state ){
 		} else if ( c == ')' ){
 			return tag_parse_val( PARSE_TYPE_RIGHT_PAREN );
 
+		} else if ( c == '.' ){
+			return tag_parse_val( PARSE_TYPE_PERIOD );
+
 		} else if ( c == '\'' ){
 			return tag_parse_val( PARSE_TYPE_APOSTROPHE );
 

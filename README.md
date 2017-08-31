@@ -16,10 +16,11 @@ framework will be coming soon.
     - [ ] handle unicode
         - [ ] generic utf* handling or just utf8?
     - [x] handle quoted forms
-    - [ ] handle dotted form pairs, (a . b)
+    - [x] handle dotted form pairs, (a . b)
     - [ ] handle vectors
     - [ ] handle strings
     - [ ] handle bytevectors
+	- [ ] properly handle parser errors
 - [ ] I/O
     - [x] `write` primitive (note: currently named `display`)
     - [x] `read` primitive 
