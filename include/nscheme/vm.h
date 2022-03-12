@@ -21,7 +21,7 @@ enum {
 
 struct vm;
 
-typedef bool (*vm_func)( struct vm *vm, uintptr_t arg );
+typedef bool (*vm_func)(struct vm *vm, uintptr_t arg);
 
 typedef struct vm_op {
 	vm_func func;
@@ -57,7 +57,7 @@ typedef struct scm_closure {
 			unsigned num_args;
 			// the number of ops contained in `code[]`
 			unsigned num_ops;
-			// the number of closed variables in `closure`, 
+			// the number of closed variables in `closure`,
 			unsigned num_closed;
 			// number of stack slots required to call this procedure, not
 			// including the arguments passed by the caller
@@ -114,10 +114,10 @@ typedef struct vm {
 	unsigned runmode;
 } vm_t;
 
-vm_t *vm_init( void );
-void  vm_free( vm_t *vm );
-void  vm_run( vm_t *vm );
+vm_t *vm_init(void);
+void  vm_free(vm_t *vm);
+void  vm_run(vm_t *vm);
 
-scm_value_t vm_evaluate_expr( vm_t *vm, scm_value_t expr );
+scm_value_t vm_evaluate_expr(vm_t *vm, scm_value_t expr);
 
 #endif

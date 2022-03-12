@@ -47,7 +47,7 @@ enum runtime_types {
 	RUN_TYPE_SET_PTR,
 };
 
-enum token_type { 
+enum token_type {
 	SCM_TYPE_INTEGER   = 0x0,
 	SCM_TYPE_PAIR      = 0x1,
 	SCM_TYPE_VECTOR    = 0x2,
@@ -79,137 +79,137 @@ typedef struct pair {
 typedef bool (*scm_type_test_t)(scm_value_t);
 
 // tagging functions
-static inline scm_value_t tag_integer( long int integer ){
+static inline scm_value_t tag_integer(long int integer) {
 	return (scm_value_t)integer << 2;
 }
 
-static inline scm_value_t tag_parse_val( unsigned type ){
+static inline scm_value_t tag_parse_val(unsigned type) {
 	return (type << 8) | SCM_TYPE_PARSE_VAL;
 }
 
-static inline scm_value_t tag_run_type( unsigned type ){
+static inline scm_value_t tag_run_type(unsigned type) {
 	return (type << 8) | SCM_TYPE_RUN_TYPE;
 }
 
-static inline scm_value_t tag_pair( scm_pair_t *pair ){
+static inline scm_value_t tag_pair(scm_pair_t *pair) {
 	return (scm_value_t)pair | SCM_TYPE_PAIR;
 }
 
-static inline scm_value_t tag_symbol( const char *str ){
+static inline scm_value_t tag_symbol(const char *str) {
 	return (scm_value_t)str | SCM_TYPE_SYMBOL;
 }
 
-static inline scm_value_t tag_closure( void *closure ){
+static inline scm_value_t tag_closure(void *closure) {
 	return (scm_value_t)closure | SCM_TYPE_CLOSURE;
 }
 
-static inline scm_value_t tag_boolean( bool boolean ){
+static inline scm_value_t tag_boolean(bool boolean) {
 	return (boolean << 8) | SCM_TYPE_BOOLEAN;
 }
 
-static inline scm_value_t tag_character( unsigned character ){
+static inline scm_value_t tag_character(unsigned character) {
 	return (character << 8) | SCM_TYPE_CHAR;
 }
 
-static inline scm_value_t construct_pair( scm_value_t car, scm_value_t cdr ){
-	scm_pair_t *pair = calloc( 1, sizeof( scm_pair_t ));
+static inline scm_value_t construct_pair(scm_value_t car, scm_value_t cdr) {
+	scm_pair_t *pair = calloc(1, sizeof(scm_pair_t));
 
 	pair->car = car;
 	pair->cdr = cdr;
 
-	return tag_pair( pair );
+	return tag_pair(pair);
 }
 
 // type testing functions
-static inline bool is_integer( scm_value_t value ){
+static inline bool is_integer(scm_value_t value) {
 	return (value & SCM_MASK_INTEGER) == SCM_TYPE_INTEGER;
 }
 
-static inline bool is_parse_val( scm_value_t value ){
+static inline bool is_parse_val(scm_value_t value) {
 	return (value & SCM_MASK_PARSE_VAL) == SCM_TYPE_PARSE_VAL;
 }
 
-static inline bool is_run_type( scm_value_t value ){
+static inline bool is_run_type(scm_value_t value) {
 	return (value & SCM_MASK_RUN_TYPE) == SCM_TYPE_RUN_TYPE;
 }
 
-static inline bool is_pair( scm_value_t value ){
+static inline bool is_pair(scm_value_t value) {
 	return (value & SCM_MASK_HEAP) == SCM_TYPE_PAIR;
 }
 
-static inline bool is_null( scm_value_t value ){
+static inline bool is_null(scm_value_t value) {
 	return value == SCM_TYPE_NULL;
 }
 
-static inline bool is_symbol( scm_value_t value ){
+static inline bool is_symbol(scm_value_t value) {
 	return (value & SCM_MASK_HEAP) == SCM_TYPE_SYMBOL;
 }
 
-static inline bool is_closure( scm_value_t value ){
+static inline bool is_closure(scm_value_t value) {
 	return (value & SCM_MASK_HEAP) == SCM_TYPE_CLOSURE;
 }
 
-static inline bool is_eof( scm_value_t value ){
-	return is_parse_val( value )
-		&& (value >> 8) == PARSE_TYPE_EOF;
+static inline bool is_eof(scm_value_t value) {
+	return is_parse_val(value)
+	       && (value >> 8) == PARSE_TYPE_EOF;
 }
 
-static inline bool is_boolean( scm_value_t value ){
+static inline bool is_boolean(scm_value_t value) {
 	return (value & SCM_MASK_BOOLEAN) == SCM_TYPE_BOOLEAN;
 }
 
-static inline bool is_character( scm_value_t value ){
+static inline bool is_character(scm_value_t value) {
 	return (value & SCM_MASK_CHAR) == SCM_TYPE_CHAR;
 }
 
 // data retrieving functions
-static inline long int get_integer( scm_value_t value ){
+static inline long int get_integer(scm_value_t value) {
 	return value >> 2;
 }
 
-static inline unsigned get_parse_val( scm_value_t value ){
+static inline unsigned get_parse_val(scm_value_t value) {
 	return value >> 8;
 }
 
-static inline unsigned get_run_type( scm_value_t value ){
+static inline unsigned get_run_type(scm_value_t value) {
 	return value >> 8;
 }
 
-static inline scm_pair_t *get_pair( scm_value_t value ){
+static inline scm_pair_t *get_pair(scm_value_t value) {
 	return (scm_pair_t *)(value & ~SCM_MASK_HEAP);
 }
 
-static inline const char *get_symbol( scm_value_t value ){
+static inline const char *get_symbol(scm_value_t value) {
 	return (const char *)(value & ~SCM_MASK_HEAP);
 }
 
-static inline void *get_closure( scm_value_t value ){
+static inline void *get_closure(scm_value_t value) {
 	return (void *)(value & ~SCM_MASK_HEAP);
 }
 
-static inline bool get_boolean( scm_value_t value ){
+static inline bool get_boolean(scm_value_t value) {
 	return value >> 8;
 }
 
-static inline unsigned get_character( scm_value_t value ){
+static inline unsigned get_character(scm_value_t value) {
 	return value >> 8;
 }
 
 // composite functions
-static inline bool is_special_form( scm_value_t value ){
+static inline bool is_special_form(scm_value_t value) {
 	bool ret = false;
 
-	if ( is_run_type( value )){
-		unsigned type = get_run_type( value );
+	if (is_run_type(value)) {
+		unsigned type = get_run_type(value);
 
 		ret = type == RUN_TYPE_LAMBDA
-		   || type == RUN_TYPE_DEFINE
-		   || type == RUN_TYPE_DEFINE_SYNTAX
-		   || type == RUN_TYPE_SET
-		   || type == RUN_TYPE_IF
-		   || type == RUN_TYPE_BEGIN
-		   || type == RUN_TYPE_QUOTE
-		   ;
+		      || type == RUN_TYPE_DEFINE
+		      || type == RUN_TYPE_DEFINE_SYNTAX
+		      || type == RUN_TYPE_SET
+		      || type == RUN_TYPE_IF
+		      || type == RUN_TYPE_BEGIN
+		      || type == RUN_TYPE_QUOTE
+		      ;
 	}
 
 	return ret;
@@ -218,22 +218,22 @@ static inline bool is_special_form( scm_value_t value ){
 // pair accessor functions
 // TODO: return an error value instead of SCM_TYPE_NULL
 //       by default, or throw the error directly
-static inline scm_value_t scm_car( scm_value_t value ){
+static inline scm_value_t scm_car(scm_value_t value) {
 	scm_value_t ret = SCM_TYPE_NULL;
 
-	if ( is_pair( value )){
-		scm_pair_t *pair = get_pair( value );
+	if (is_pair(value)) {
+		scm_pair_t *pair = get_pair(value);
 		ret = pair->car;
 	}
 
 	return ret;
 }
 
-static inline scm_value_t scm_cdr( scm_value_t value ){
+static inline scm_value_t scm_cdr(scm_value_t value) {
 	scm_value_t ret = SCM_TYPE_NULL;
 
-	if ( is_pair( value )){
-		scm_pair_t *pair = get_pair( value );
+	if (is_pair(value)) {
+		scm_pair_t *pair = get_pair(value);
 		ret = pair->cdr;
 	}
 
