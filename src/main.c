@@ -15,6 +15,11 @@ void repl(vm_t *vm, parse_state_t *input) {
 		temp = parse_expression(input);
 		temp = vm_evaluate_expr(vm, temp);
 
+		if (vm->errormsg) {
+			fprintf(stderr, " !! error: %s\n", vm->errormsg);
+			vm_clear_error(vm);
+		}
+
 		printf(" => ");
 		write_value(temp);
 		printf("\n");
@@ -29,6 +34,11 @@ void evaluate_file(vm_t *vm, parse_state_t *input) {
 	while (!is_eof(temp)) {
 		temp = parse_expression(input);
 		temp = vm_evaluate_expr(vm, temp);
+
+		if (vm->errormsg) {
+			fprintf(stderr, "error: %s\n", vm->errormsg);
+			return;
+		}
 	}
 }
 

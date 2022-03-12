@@ -40,6 +40,8 @@ scope_node_t *scope_add_node(scope_t     *scope,
 		scope->nodes = node;
 	}
 
+	// TODO: is this right? overwriting the previous location and type of
+	//       the original node? double check
 	node->location = location;
 	node->type     = type;
 
@@ -49,7 +51,8 @@ scope_node_t *scope_add_node(scope_t     *scope,
 	return node;
 }
 
-void scope_handle_symbol(comp_state_t *state,
+// returns true if successfully found
+bool scope_handle_symbol(comp_state_t *state,
                          scope_t      *scope,
                          comp_node_t  *comp)
 {
@@ -65,25 +68,31 @@ void scope_handle_symbol(comp_state_t *state,
 		             loc_strs[temp->type], temp->location);
 
 		comp->car->node = temp;
+		return true;
 
 	} else {
 		env_node_t *env = env_find_recurse(state->env, sym);
 
 		if (!env) {
 			DEBUG_PRINTF("could not resolve, error out or something\n");
-			return;
+			return false;
 		}
 
 		unsigned index = add_closure_node(state, env, sym);
 
 		DEBUG_PRINTF("adding as closure:%u\n", index);
 		comp->car->node = scope_add_node(scope, sym, SCOPE_CLOSURE, index);
+		return true;
 	}
 }
 
 #include <nscheme/write.h>
 
-void gen_sub_scope(comp_node_t  *comp,
+// return false on failure:
+// - illegal (define ...) expression
+// - undefined name
+// TODO: error message
+bool gen_sub_scope(comp_node_t  *comp,
                    comp_state_t *state,
                    scope_t      *cur_scope,
                    scm_value_t  syms,
@@ -98,18 +107,25 @@ void gen_sub_scope(comp_node_t  *comp,
 
 			} else if (is_define_statement(state->env, comp)) {
 				DEBUG_PRINTF("    | » define statement only allowed at top-level!\n");
+				return false;
 
 			} else {
-				scope_handle_symbol(state, cur_scope, comp);
+				if (!scope_handle_symbol(state, cur_scope, comp)) {
+					return false;
+				}
 			}
 
 		} else if (is_pair(comp->value)) {
-			gen_sub_scope(comp->car, state, cur_scope, syms, sp++);
+			if (!gen_sub_scope(comp->car, state, cur_scope, syms, sp++)) {
+				return false;
+			}
 		}
 	}
+
+	return true;
 }
 
-void gen_top_scope(comp_node_t  *comp,
+bool gen_top_scope(comp_node_t  *comp,
                    comp_state_t *state,
                    scope_t      *cur_scope,
                    scm_value_t  syms,
@@ -152,8 +168,10 @@ void gen_top_scope(comp_node_t  *comp,
 		DEBUG_WRITEVAL(name);
 		DEBUG_PRINTF("\n");
 
-		gen_sub_scope(body, state, cur_scope, SCM_TYPE_NULL, sp++);
+		if (!gen_sub_scope(body, state, cur_scope, SCM_TYPE_NULL, sp++)) {
+			return false;
+		}
 	}
 
-	gen_sub_scope(comp, state, cur_scope, SCM_TYPE_NULL, sp++);
+	return gen_sub_scope(comp, state, cur_scope, SCM_TYPE_NULL, sp++);
 }

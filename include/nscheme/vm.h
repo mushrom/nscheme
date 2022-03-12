@@ -112,11 +112,15 @@ typedef struct vm {
 	unsigned stack_size;
 	unsigned calls_size;
 	unsigned runmode;
+
+	const char *errormsg;
 } vm_t;
 
 vm_t *vm_init(void);
 void  vm_free(vm_t *vm);
 void  vm_run(vm_t *vm);
+void  vm_error(vm_t *vm, const char *msg);
+void  vm_clear_error(vm_t *vm);
 
 scm_value_t vm_evaluate_expr(vm_t *vm, scm_value_t expr);
 

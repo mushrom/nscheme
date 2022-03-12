@@ -180,8 +180,10 @@ static inline void vm_step_interpreter(vm_t *vm) {
 				}
 
 			} else {
+				// TODO: pass current expression to error output
 				printf("    symbol '%s' not found\n", get_symbol(pair->car));
-				vm_stack_push(vm, pair->car);
+				vm_error(vm, "undefined symbol");
+				//vm_stack_push(vm, pair->car);
 			}
 
 		} else {
@@ -205,6 +207,7 @@ static inline void vm_step_interpreter(vm_t *vm) {
 
 			} else {
 				printf("    symbol '%s' not found\n", get_symbol(vm->ptr));
+				vm_error(vm, "undefined symbol");
 			}
 		}
 
@@ -228,6 +231,18 @@ void vm_run(vm_t *vm) {
 		//       pointers is faster than branching, once things are working
 		//stepfuncs[vm->closure->is_compiled]( vm );
 	}
+}
+
+void vm_error(vm_t *vm, const char *msg) {
+	vm->running = false;
+	vm->errormsg = msg;
+	// TODO: current line number, some way to attach other context
+	//       information to the code
+}
+
+void  vm_clear_error(vm_t *vm) {
+	vm->running = true;
+	vm->errormsg = NULL;
 }
 
 static scm_closure_t *root_closure = NULL;

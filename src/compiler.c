@@ -320,10 +320,9 @@ static inline void store_instructions(comp_state_t *state,
 		closure->code[i].arg  = node->op;
 		i += 1;
 
-		DEBUG_PRINTF("    | - instruction %3u: %14s (%p) : %lu\n",
+		DEBUG_PRINTF("    | - instruction %3u: %14s : %lu\n",
 		             i,
 		             opnames[node->instr],
-		             opfuncs[node->instr],
 		             node->op);
 
 		free(node);
@@ -373,7 +372,7 @@ static inline void free_comp_values(comp_node_t *comp) {
 }
 
 scm_closure_t *vm_compile_closure(vm_t *vm, scm_closure_t *closure) {
-	scm_closure_t *ret = NULL;
+	//scm_closure_t *ret = NULL;
 	comp_state_t state;
 
 	DEBUG_PRINTF("    + compiling closure at %p\n", closure);
@@ -389,8 +388,13 @@ scm_closure_t *vm_compile_closure(vm_t *vm, scm_closure_t *closure) {
 
 	comp_node_t *values = wrap_comp_values(closure->definition);
 
-	gen_top_scope(values, &state, NULL, closure->args, 1);
-	dump_comp_values(values, 0);
+	if (!gen_top_scope(values, &state, NULL, closure->args, 1)) {
+		// TODO: better errors
+		vm_error(vm, "Couldn't define the top scope!");
+		DEBUG_PRINTF("    | couldn't define the top scope!\n");
+		return NULL;
+	}
+	//dump_comp_values(values, 0);
 
 	compile_expression_list(&state, values, true);
 	add_instr_node(&state, INSTR_RETURN, 0);
@@ -406,5 +410,7 @@ scm_closure_t *vm_compile_closure(vm_t *vm, scm_closure_t *closure) {
 
 	closure->compiled = true;
 
-	return ret;
+	//return ret;
+	//return NULL;
+	return closure;
 }

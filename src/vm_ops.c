@@ -110,8 +110,10 @@ void vm_call_apply(vm_t *vm) {
 			vm->argnum = 0;
 			clsr->num_calls++;
 
-			if (clsr->num_calls == 3) {
-				vm_compile_closure(vm, clsr);
+			if (clsr->num_calls >= 3) {
+				if (!vm_compile_closure(vm, clsr)) {
+					return;
+				}
 			}
 
 			vm_load_lambda_args(vm, called_args, clsr->args);
@@ -121,6 +123,8 @@ void vm_call_apply(vm_t *vm) {
 	} else if (func == tag_run_type(RUN_TYPE_SET_PTR)) {
 		if (vm->argnum != 2) {
 			puts("    can't eval with given arguments");
+			vm_error(vm, "can't eval");
+			return;
 		}
 
 		scm_value_t ptr = vm_stack_pop(vm);
@@ -283,7 +287,8 @@ bool vm_op_div(vm_t *vm, uintptr_t arg) {
 
 		} else {
 			puts("divide by zero! TODO: error");
-
+			vm_error(vm, "divide by zero!");
+			return true;
 		}
 	}
 
@@ -297,6 +302,7 @@ bool vm_op_div(vm_t *vm, uintptr_t arg) {
 bool vm_op_cons(vm_t *vm, uintptr_t arg) {
 	if (vm->argnum != 3) {
 		puts("not enough args man");
+		vm_error(vm, "cons: not enough args");
 		return true;
 	}
 

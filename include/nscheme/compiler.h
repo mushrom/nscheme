@@ -88,7 +88,7 @@ typedef struct comp_node {
 
 scm_closure_t *vm_compile_closure(vm_t *vm, scm_closure_t *closure);
 
-void gen_top_scope(comp_node_t*, comp_state_t*, scope_t*, scm_value_t, unsigned);
+bool gen_top_scope(comp_node_t*, comp_state_t*, scope_t*, scm_value_t, unsigned);
 unsigned add_closure_node(comp_state_t *, env_node_t *, scm_value_t);
 
 static inline bool is_runtime_token(environment_t *env,
