@@ -90,6 +90,7 @@ static inline void vm_handle_if(vm_t *vm,
 {
 	if (!is_pair(expr)) {
 		puts("error in if!");
+		vm_error(vm, "Expected pair");
 	}
 
 	scm_pair_t *pair = get_pair(expr);
@@ -102,8 +103,19 @@ static inline void vm_handle_if(vm_t *vm,
 
 	scm_value_t test = pair->car;
 
+	if (!is_pair(pair->cdr)) {
+		vm_error(vm, "Expected pair (first path)");
+		return;
+	}
+
 	pair = get_pair(pair->cdr);
+
 	vm_stack_push(vm, pair->car);
+
+	if (!is_pair(pair->cdr)) {
+		vm_error(vm, "Expected pair (second path)");
+		return;
+	}
 
 	pair = get_pair(pair->cdr);
 	vm_stack_push(vm, pair->car);

@@ -80,6 +80,7 @@ static void vm_load_lambda_args(vm_t *vm, unsigned argnum, scm_value_t args) {
 
 	if (i != argnum) {
 		puts("    error: not enough or too many arguments to function");
+		vm_error(vm, "Invalid number of arguments given to lambda args");
 	}
 }
 
@@ -135,6 +136,7 @@ void vm_call_apply(vm_t *vm) {
 		printf("    dunno how to apply ");
 		write_value(func);
 		printf("\n");
+		vm_error(vm, "can't apply value which is not a function");
 		vm->running = false;
 	}
 }
@@ -318,6 +320,7 @@ bool vm_op_cons(vm_t *vm, uintptr_t arg) {
 bool vm_op_car(vm_t *vm, uintptr_t arg) {
 	if (vm->argnum != 2) {
 		puts("cargs");
+		vm_error(vm, "Invalid number of arguments for car");
 		return true;
 	}
 
@@ -326,6 +329,7 @@ bool vm_op_car(vm_t *vm, uintptr_t arg) {
 
 	if (!is_pair(value)) {
 		puts("car does not abide, man");
+		vm_error(vm, "Value given to car is not a pair");
 		return true;
 	}
 
@@ -338,6 +342,7 @@ bool vm_op_car(vm_t *vm, uintptr_t arg) {
 bool vm_op_cdr(vm_t *vm, uintptr_t arg) {
 	if (vm->argnum != 2) {
 		puts("cdargs");
+		vm_error(vm, "Invalid number of arguments for cdr");
 		return true;
 	}
 
@@ -346,6 +351,7 @@ bool vm_op_cdr(vm_t *vm, uintptr_t arg) {
 
 	if (!is_pair(value)) {
 		puts("cdr does not abide, man");
+		vm_error(vm, "Value given to cdr is not a pair");
 		return true;
 	}
 
@@ -358,6 +364,7 @@ bool vm_op_cdr(vm_t *vm, uintptr_t arg) {
 bool vm_op_lessthan(vm_t *vm, uintptr_t arg) {
 	if (vm->argnum != 3) {
 		puts("not enough args man");
+		vm_error(vm, "Invalid number of arguments for lessthan");
 		return true;
 	}
 
@@ -373,6 +380,7 @@ bool vm_op_lessthan(vm_t *vm, uintptr_t arg) {
 bool vm_op_equal(vm_t *vm, uintptr_t arg) {
 	if (vm->argnum != 3) {
 		puts("not enough args man");
+		vm_error(vm, "Invalid number of arguments for equal");
 		return true;
 	}
 
@@ -388,6 +396,7 @@ bool vm_op_equal(vm_t *vm, uintptr_t arg) {
 bool vm_op_greaterthan(vm_t *vm, uintptr_t arg) {
 	if (vm->argnum != 3) {
 		puts("not enough args man");
+		vm_error(vm, "Invalid number of arguments for greaterthan");
 		return true;
 	}
 
@@ -433,6 +442,7 @@ bool vm_op_is_pair(vm_t *vm, uintptr_t arg) {
 bool vm_op_intern_define(vm_t *vm, uintptr_t arg) {
 	if (vm->argnum != 3) {
 		puts("not enough args man");
+		vm_error(vm, "Invalid number of arguments for define");
 		return true;
 	}
 
@@ -441,6 +451,7 @@ bool vm_op_intern_define(vm_t *vm, uintptr_t arg) {
 
 	if (!is_symbol(sym)) {
 		puts("expected symbol");
+		vm_error(vm, "Invalid value type given to define");
 		return true;
 	}
 
@@ -452,6 +463,7 @@ bool vm_op_intern_define(vm_t *vm, uintptr_t arg) {
 bool vm_op_intern_set(vm_t *vm, uintptr_t arg) {
 	if (vm->argnum != 3) {
 		puts("not enough args man");
+		vm_error(vm, "Invalid number of arguments given to set");
 		return true;
 	}
 
@@ -460,6 +472,7 @@ bool vm_op_intern_set(vm_t *vm, uintptr_t arg) {
 
 	if (!is_symbol(sym)) {
 		puts("expected symbol");
+		vm_error(vm, "Invalid value type given to define");
 		return true;
 	}
 
