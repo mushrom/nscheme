@@ -53,10 +53,13 @@ void write_value(scm_value_t value) {
 		})[clsr->compiled],
 		clsr);
 
+    } else if (is_syntax_rules(value)) {
+        printf("#<syntax-rules>");
+
 	} else if (is_run_type(value)) {
 		const char *strs[] = {
 			"<none>", "lambda", "define", "define-syntax", "set!",
-			"if", "begin", "quote", "eval",
+			"if", "begin", "quote", "eval", "<intern:set-ptr>", "syntax-rules",
 		};
 
 		printf("#<runtime type:%s>", strs[get_run_type(value)]);

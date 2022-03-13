@@ -64,9 +64,9 @@ static inline void vm_handle_define(vm_t *vm,
 	scm_pair_t *pair = get_pair(expr);
 
 	vm_stack_push(vm,
-	              (type == RUN_TYPE_DEFINE)
-	              ? vm_func_intern_define()
-	              : vm_func_intern_set());
+	              (type == RUN_TYPE_SET)
+	              ? vm_func_intern_set()
+	              : vm_func_intern_define());
 
 	if (is_symbol(pair->car)) {
 		vm_stack_push(vm, pair->car);
@@ -140,6 +140,24 @@ static inline void vm_handle_quote(vm_t *vm,
 	vm->ptr = SCM_TYPE_NULL;
 }
 
+static inline void vm_handle_syntax_rules(vm_t *vm,
+                                          scm_value_t form,
+                                          scm_value_t expr)
+{
+	scm_syntax_rules_t *ret = calloc(1, sizeof(scm_syntax_rules_t));
+
+	// TODO: error checking
+	scm_pair_t *pair = get_pair(expr);
+	ret->keywords = is_null(pair->car)? NULL : get_pair(pair->car);
+
+	pair = get_pair(pair->cdr);
+	ret->patterns = get_pair(pair->car);
+
+	vm_stack_push(vm, vm_func_return_last());
+	vm_stack_push(vm, tag_heap_type(ret, SCM_TYPE_SYNTAX_RULES));
+	vm->ptr = SCM_TYPE_NULL;
+}
+
 static void vm_handle_sform(vm_t *vm, scm_value_t form, scm_value_t expr) {
 	unsigned type = get_run_type(form);
 
@@ -150,6 +168,7 @@ static void vm_handle_sform(vm_t *vm, scm_value_t form, scm_value_t expr) {
 
 	case RUN_TYPE_DEFINE:
 	case RUN_TYPE_SET:
+	case RUN_TYPE_DEFINE_SYNTAX:
 		vm_handle_define(vm, form, expr, type);
 		break;
 
@@ -163,6 +182,10 @@ static void vm_handle_sform(vm_t *vm, scm_value_t form, scm_value_t expr) {
 
 	case RUN_TYPE_QUOTE:
 		vm_handle_quote(vm, form, expr);
+		break;
+
+	case RUN_TYPE_SYNTAX_RULES:
+		vm_handle_syntax_rules(vm, form, expr);
 		break;
 
 	default:
@@ -358,6 +381,9 @@ vm_t *vm_init(void) {
 
 	foo = tag_symbol(store_symbol(strdup("quote")));
 	env_set(ret->env, foo, tag_run_type(RUN_TYPE_QUOTE));
+
+	foo = tag_symbol(store_symbol(strdup("syntax-rules")));
+	env_set(ret->env, foo, tag_run_type(RUN_TYPE_SYNTAX_RULES));
 
 	return ret;
 }

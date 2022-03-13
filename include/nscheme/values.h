@@ -53,6 +53,7 @@ enum runtime_types {
 	RUN_TYPE_QUOTE,
 	RUN_TYPE_EVAL,
 	RUN_TYPE_SET_PTR,
+	RUN_TYPE_SYNTAX_RULES,
 };
 
 enum token_type {
@@ -90,6 +91,11 @@ typedef struct pair {
 	scm_value_t cdr;
 } scm_pair_t;
 
+typedef struct syntax_rules {
+	scm_pair_t *keywords;
+	scm_pair_t *patterns;
+} scm_syntax_rules_t;
+
 typedef bool (*scm_type_test_t)(scm_value_t);
 
 // tagging functions
@@ -107,6 +113,10 @@ static inline scm_value_t tag_run_type(unsigned type) {
 
 static inline scm_value_t tag_pair(scm_pair_t *pair) {
 	return (scm_value_t)pair | SCM_TYPE_PAIR;
+}
+
+static inline scm_value_t tag_heap_type(void *ptr, unsigned type) {
+	return (scm_value_t)((uintptr_t)ptr | type);
 }
 
 static inline scm_value_t tag_symbol(const char *str) {
@@ -147,8 +157,16 @@ static inline bool is_run_type(scm_value_t value) {
 	return (value & SCM_MASK_RUN_TYPE) == SCM_TYPE_RUN_TYPE;
 }
 
+static inline unsigned get_heap_type(scm_value_t value) {
+	return value & SCM_MASK_HEAP;
+}
+
 static inline bool is_pair(scm_value_t value) {
-	return (value & SCM_MASK_HEAP) == SCM_TYPE_PAIR;
+	return get_heap_type(value) == SCM_TYPE_PAIR;
+}
+
+static inline bool is_syntax_rules(scm_value_t value) {
+	return get_heap_type(value) == SCM_TYPE_SYNTAX_RULES;
 }
 
 static inline bool is_null(scm_value_t value) {
@@ -189,8 +207,16 @@ static inline unsigned get_run_type(scm_value_t value) {
 	return value >> 8;
 }
 
+static inline void *get_heap_tagged_value(scm_value_t value) {
+	return (void *)(value & ~SCM_MASK_HEAP);
+}
+
 static inline scm_pair_t *get_pair(scm_value_t value) {
-	return (scm_pair_t *)(value & ~SCM_MASK_HEAP);
+	return get_heap_tagged_value(value);
+}
+
+static inline scm_syntax_rules_t *get_syntax_rules(scm_value_t value) {
+	return get_heap_tagged_value(value);
 }
 
 static inline const char *get_symbol(scm_value_t value) {
@@ -217,13 +243,14 @@ static inline bool is_special_form(scm_value_t value) {
 		unsigned type = get_run_type(value);
 
 		ret = type == RUN_TYPE_LAMBDA
-		      || type == RUN_TYPE_DEFINE
-		      || type == RUN_TYPE_DEFINE_SYNTAX
-		      || type == RUN_TYPE_SET
-		      || type == RUN_TYPE_IF
-		      || type == RUN_TYPE_BEGIN
-		      || type == RUN_TYPE_QUOTE
-		      ;
+		   || type == RUN_TYPE_DEFINE
+		   || type == RUN_TYPE_DEFINE_SYNTAX
+		   || type == RUN_TYPE_SET
+		   || type == RUN_TYPE_IF
+		   || type == RUN_TYPE_BEGIN
+		   || type == RUN_TYPE_QUOTE
+		   || type == RUN_TYPE_SYNTAX_RULES
+		   ;
 	}
 
 	return ret;
