@@ -1,6 +1,7 @@
 #include <nscheme/vm.h>
 #include <nscheme/vm_ops.h>
 #include <nscheme/env.h>
+#include <nscheme/syntax-rules.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -162,35 +163,35 @@ static void vm_handle_sform(vm_t *vm, scm_value_t form, scm_value_t expr) {
 	unsigned type = get_run_type(form);
 
 	switch (type) {
-	case RUN_TYPE_LAMBDA:
-		vm_handle_lambda(vm, form, expr);
-		break;
+		case RUN_TYPE_LAMBDA:
+			vm_handle_lambda(vm, form, expr);
+			break;
 
-	case RUN_TYPE_DEFINE:
-	case RUN_TYPE_SET:
-	case RUN_TYPE_DEFINE_SYNTAX:
-		vm_handle_define(vm, form, expr, type);
-		break;
+		case RUN_TYPE_DEFINE:
+		case RUN_TYPE_SET:
+		case RUN_TYPE_DEFINE_SYNTAX:
+			vm_handle_define(vm, form, expr, type);
+			break;
 
-	case RUN_TYPE_IF:
-		vm_handle_if(vm, form, expr);
-		break;
+		case RUN_TYPE_IF:
+			vm_handle_if(vm, form, expr);
+			break;
 
-	case RUN_TYPE_BEGIN:
-		vm_handle_begin(vm, form, expr);
-		break;
+		case RUN_TYPE_BEGIN:
+			vm_handle_begin(vm, form, expr);
+			break;
 
-	case RUN_TYPE_QUOTE:
-		vm_handle_quote(vm, form, expr);
-		break;
+		case RUN_TYPE_QUOTE:
+			vm_handle_quote(vm, form, expr);
+			break;
 
-	case RUN_TYPE_SYNTAX_RULES:
-		vm_handle_syntax_rules(vm, form, expr);
-		break;
+		case RUN_TYPE_SYNTAX_RULES:
+			vm_handle_syntax_rules(vm, form, expr);
+			break;
 
-	default:
-		printf("unknown type in special form evaluation\n");
-		break;
+		default:
+			printf("unknown type in special form evaluation\n");
+			break;
 	}
 }
 
@@ -209,6 +210,15 @@ static inline void vm_step_interpreter(vm_t *vm) {
 			if (foo) {
 				if (is_special_form(foo->value)) {
 					vm_handle_sform(vm, foo->value, pair->cdr);
+					puts("have sform");
+
+				} else if (is_syntax_rules(foo->value)) {
+					scm_syntax_rules_t *rules = get_syntax_rules(foo->value);
+					puts("have syntax rules, expanding");
+					vm_stack_push(vm, vm_func_return_last());
+					vm_stack_push(vm, SCM_TYPE_NULL);
+					vm->ptr = SCM_TYPE_NULL;
+					vm_call_eval(vm, expand_syntax_rules(vm, rules, pair));
 
 				} else {
 					vm_stack_push(vm, foo->value);
