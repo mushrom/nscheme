@@ -8,20 +8,28 @@
 /*
  *   summary of tagged pointers defined here:
  *
- *   integer | 0 0 <integer>
+ *         integer | 0 0 <integer>
  *
- *      pair | 1 0 0 <address>
- *    vector | 0 1 0 <address>
- *    string | 1 1 0 <address>
- *   closure | 1 0 1 <address>
- *    symbol | 0 1 1 <address>
+ *            pair | 1 0 0 0 <address>
+ *          vector | 0 1 0 0 <address>
+ *          string | 1 1 0 0 <address>
+ *         closure | 1 0 1 0 <address>
+ *          symbol | 0 1 1 0 <address>
+ *    syntax-rules | 1 1 1 0 <address>
+ *    external ptr | 1 0 0 1 <address>
+ *   other numbers | 0 1 0 1 <address> (floats, bigints, rationals, complex)
+ *           TODO: not sure if these are final yet
+ *                 could have a single array type and store the contained
+ *                 type in there, if a need arises for more heap tags
+ *     float-array | 1 1 0 1 <address>
+ *       int-array | 1 0 1 1 <address>
+ *      byte-array | 0 1 1 1 <address>
  *
- *      char | 1 1 1 1 0 0 0 0 <codepoint>
- *   boolean | 1 1 1 1 0 0 1 0 <boolean>
- *      null | 1 1 1 1 0 1
- * parse val | 1 1 1 1 0 0 0 1 <type>
- *   runtime | 1 1 1 1 0 0 1 1 <type>
- *      type
+ *            char | 1 1 1 1 0 0 0 0 <codepoint>
+ *         boolean | 1 1 1 1 0 0 1 0 <boolean>
+ *            null | 1 1 1 1 0 1 0 0
+ *       parse val | 1 1 1 1 0 0 0 1 <type>
+ *    runtime type | 1 1 1 1 0 0 1 1 <type>
  */
 
 enum parse_types {
@@ -48,12 +56,18 @@ enum runtime_types {
 };
 
 enum token_type {
-	SCM_TYPE_INTEGER   = 0x0,
-	SCM_TYPE_PAIR      = 0x1,
-	SCM_TYPE_VECTOR    = 0x2,
-	SCM_TYPE_STRING    = 0x3,
-	SCM_TYPE_CLOSURE   = 0x5,
-	SCM_TYPE_SYMBOL    = 0x6,
+	SCM_TYPE_INTEGER      = 0x0,
+	SCM_TYPE_PAIR         = 0x1,
+	SCM_TYPE_VECTOR       = 0x2,
+	SCM_TYPE_STRING       = 0x3,
+	SCM_TYPE_CLOSURE      = 0x5,
+	SCM_TYPE_SYMBOL       = 0x6,
+	SCM_TYPE_SYNTAX_RULES = 0x7,
+	SCM_TYPE_EXTERNAL_PTR = 0x9,
+	SCM_TYPE_BIG_NUMBER   = 0xa,
+	SCM_TYPE_FLOAT_ARRAY  = 0xb,
+	SCM_TYPE_INT_ARRAY    = 0xd,
+	SCM_TYPE_BYTE_ARRAY   = 0xe,
 
 	SCM_TYPE_CHAR      = 0xf,
 	SCM_TYPE_BOOLEAN   = 0x4f,
@@ -62,7 +76,7 @@ enum token_type {
 	SCM_TYPE_RUN_TYPE  = 0xcf,
 
 	SCM_MASK_INTEGER   = 0x3,
-	SCM_MASK_HEAP      = 0x7,
+	SCM_MASK_HEAP      = 0xf,
 	SCM_MASK_CHAR      = 0xff,
 	SCM_MASK_PARSE_VAL = 0xff,
 	SCM_MASK_RUN_TYPE  = 0xff,
