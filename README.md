@@ -22,7 +22,9 @@ framework will be coming soon.
     - [ ] handle bytevectors
 	- [ ] properly handle parser errors
 - [ ] I/O
-    - [x] `write` primitive (note: currently named `display`)
+    - [/] `write` primitives
+	    - [x] `display`
+		- [ ] `write`
     - [x] `read` primitive 
     - [ ] implement port handles
         - [ ] implement a generic port structure to handle I/O for many different
@@ -35,7 +37,7 @@ framework will be coming soon.
         - [x] some basic forms (lambda, if, define, top-level begin)
         - [ ] expression-like begin
         - [ ] tail recursion (note: may not be needed if all lambdas are JIT'd on first call)
-        - [ ] syntax expansion
+        - [ ] ! syntax expansion
     - [ ] JIT compiler
         - [x] Tail recursion
         - [ ] Scope analysis pass
@@ -43,8 +45,8 @@ framework will be coming soon.
                 - [x] single local variable definitions
                 - [ ] function definition form
             - [ ] handle expression-like begin forms that generate new scope
-        - [ ] handle nested lambdas
-        - [ ] syntax expansion
+        - [ ] ! handle nested lambdas
+        - [ ] ! syntax expansion
         - [ ] optimizations
             - [ ] common subexpression elimination
             - [ ] dead code elimination
@@ -52,16 +54,16 @@ framework will be coming soon.
             - [ ] inline small functions
                 - will be especially useful for syntax extensions
                   which generate lambdas, eg. named lets)
+    - [ ] garbage collection
+        - [ ] ! implement basic pointer bumping allocation
+        - [ ] ! implement mark-and-compact collector
+        - [ ] figure out a way to make it work with multiple threads (arenas?)
     - [ ] exception handling
         - [ ] implement exception stack in vm struct
         - [ ] add `with-exception-handler` and `error` primitives
     - [ ] module system
         - [ ] figure out what to put here
         - [ ] implement r7rs libraries and associated procedures
-    - [ ] garbage collection
-        - [ ] implement basic pointer bumping allocation
-        - [ ] implement copying garbage collector
-        - [ ] figure out a way to make it work with multiple threads
     - [ ] FFI
         - [ ] maybe look at how python does it, or lua or chicken or something
 - [ ] command line interface
