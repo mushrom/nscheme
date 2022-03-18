@@ -208,19 +208,27 @@ static inline void vm_step_interpreter(vm_t *vm) {
 			env_node_t *foo = env_find_recurse(vm->env, pair->car);
 
 			if (foo) {
-				if (is_special_form(foo->value)) {
-					vm_handle_sform(vm, foo->value, pair->cdr);
-					puts("have sform");
+				if (vm->argnum == 0) {
+					// only try to expand special forms and macros
+					// if this is the first element in the list
+					if (is_special_form(foo->value)) {
+						vm_handle_sform(vm, foo->value, pair->cdr);
+						puts("have sform");
 
-				} else if (is_syntax_rules(foo->value)) {
-					scm_syntax_rules_t *rules = get_syntax_rules(foo->value);
-					puts("have syntax rules, expanding");
-					vm_stack_push(vm, vm_func_return_last());
-					vm_stack_push(vm, SCM_TYPE_NULL);
-					vm->ptr = SCM_TYPE_NULL;
-					vm_call_eval(vm, expand_syntax_rules(vm, rules, pair));
+					} else if (is_syntax_rules(foo->value)) {
+						scm_syntax_rules_t *rules = get_syntax_rules(foo->value);
+						puts("have syntax rules, expanding");
+						vm_stack_push(vm, vm_func_return_last());
+						vm_stack_push(vm, SCM_TYPE_NULL);
+						vm->ptr = SCM_TYPE_NULL;
+						vm_call_eval(vm, expand_syntax_rules(vm, rules, pair));
+
+					} else {
+						vm_stack_push(vm, foo->value);
+					}
 
 				} else {
+					// otherwise just push the underlying value
 					vm_stack_push(vm, foo->value);
 				}
 
@@ -338,6 +346,8 @@ static void vm_add_arithmetic_op(vm_t *vm, char *name, vm_func func) {
 
 vm_t *vm_init(void) {
 	vm_t *ret = calloc(1, sizeof(vm_t));
+	gc_init(&ret->gc, 0x8000);
+
 	//scm_closure_t *root_closure = calloc( 1, sizeof( scm_closure_t ));
 	root_closure = calloc(1, sizeof(scm_closure_t));
 

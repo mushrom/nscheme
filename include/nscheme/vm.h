@@ -91,7 +91,26 @@ typedef struct vm_frame {
 	};
 } vm_callframe_t;
 
+typedef struct scm_gc_context {
+	// start of the heap
+	uint8_t *base;
+	// end of the heap
+	uint8_t *end;
+	// current end of the allocations in the heap
+	uint8_t *allocend;
+
+	// keeps track of whether the current marked bit is 1 or 0
+	// alternates each GC collection cycle
+	int current_mark;
+} vm_gc_context_t;
+
 typedef struct vm {
+	// data for threaded interpreter
+	unsigned ip;
+	unsigned sp;
+	unsigned callp;
+	bool running;
+
 	// current closure
 	scm_closure_t *closure;
 	scm_value_t *stack;
@@ -101,18 +120,13 @@ typedef struct vm {
 	environment_t *env;
 	scm_value_t ptr;
 
-	// data for threaded interpreter
-	unsigned ip;
-	unsigned sp;
-	unsigned callp;
-
 	// general
 	unsigned argnum;
-	bool running;
 	unsigned stack_size;
 	unsigned calls_size;
 	unsigned runmode;
 
+	vm_gc_context_t gc;
 	const char *errormsg;
 } vm_t;
 
@@ -121,6 +135,11 @@ void  vm_free(vm_t *vm);
 void  vm_run(vm_t *vm);
 void  vm_error(vm_t *vm, const char *msg);
 void  vm_clear_error(vm_t *vm);
+
+void  *vm_alloc(vm_t *vm, size_t n);
+void   gc_init(vm_gc_context_t *gc, size_t initial_size);
+void  *gc_alloc(vm_gc_context_t *gc, size_t n);
+size_t gc_collect_vm(vm_gc_context_t *gc, vm_t *vm);
 
 scm_value_t vm_evaluate_expr(vm_t *vm, scm_value_t expr);
 
