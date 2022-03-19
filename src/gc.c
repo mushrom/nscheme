@@ -30,6 +30,7 @@ void *vm_alloc(vm_t *vm, size_t n) {
 }
 
 void gc_init(vm_gc_context_t *gc, size_t initial_size) {
+	// TODO: need to make sure pointers are aligned to 16
 	gc->base         = malloc(initial_size);
 	gc->end          = gc->base + initial_size;
 	gc->allocend     = gc->base;
@@ -49,6 +50,7 @@ void *gc_alloc(vm_gc_context_t *gc, size_t n) {
 	// unmarked by default
 	ret->flags = !gc->current_mark;
 
+	// TODO: need to make sure pointers are aligned to 16
 	return (uint8_t*)ret + sizeof(scm_gc_block_t);
 }
 

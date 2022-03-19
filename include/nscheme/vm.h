@@ -104,6 +104,19 @@ typedef struct scm_gc_context {
 	int current_mark;
 } vm_gc_context_t;
 
+typedef struct vm_handle {
+	scm_value_t value;
+	bool used;
+	// TODO: call, destructor functions
+} vm_handle_t;
+
+typedef struct vm_handle_stack {
+	vm_handle_t *slots;
+	int *avail;
+	size_t num_avail;
+	size_t max_avail;
+} vm_handle_stack_t;
+
 typedef struct vm {
 	// data for threaded interpreter
 	unsigned ip;
@@ -128,6 +141,11 @@ typedef struct vm {
 
 	vm_gc_context_t gc;
 	const char *errormsg;
+
+	// data handles, used to keep explicit references to values when they're
+	// not otherwise part of the VM state
+	// e.g. for macro generation, external callers, etc
+	vm_handle_stack_t handles;
 } vm_t;
 
 vm_t *vm_init(void);
@@ -140,6 +158,13 @@ void  *vm_alloc(vm_t *vm, size_t n);
 void   gc_init(vm_gc_context_t *gc, size_t initial_size);
 void  *gc_alloc(vm_gc_context_t *gc, size_t n);
 size_t gc_collect_vm(vm_gc_context_t *gc, vm_t *vm);
+
+void vm_handles_init(vm_handle_stack_t *stack, size_t initial_size);
+int  vm_handle_alloc(vm_t *vm);
+void vm_handle_free(vm_t *vm, int handle);
+bool vm_handle_valid(vm_t *vm, int handle);
+scm_value_t vm_handle_get(vm_t *vm, int handle);
+void        vm_handle_set(vm_t *vm, int handle, scm_value_t);
 
 scm_value_t vm_evaluate_expr(vm_t *vm, scm_value_t expr);
 

@@ -344,9 +344,84 @@ static void vm_add_arithmetic_op(vm_t *vm, char *name, vm_func func) {
 	env_set(vm->env, foo, clsr);
 }
 
+void vm_handles_init(vm_handle_stack_t *stack, size_t initial_size) {
+	stack->slots = calloc(1, sizeof(vm_handle_t[initial_size]));
+	stack->avail = calloc(1, sizeof(int[initial_size]));
+	stack->num_avail = initial_size;
+	stack->max_avail = initial_size;
+	// TODO: check allocations, error
+
+	for (int i = 0; i < initial_size; i++) {
+		stack->avail[i] = i;
+	}
+}
+
+int vm_handle_alloc(vm_t *vm) {
+	if (vm->handles.num_avail == 0) {
+		// TODO: reallocate
+		return -1;
+	}
+
+	int ret = --vm->handles.num_avail;
+	if (vm->handles.slots[ret].used) {
+		// TODO: fatal error, double allocation
+		//       (probably the result of a double free)
+		return -1;
+	}
+
+	vm->handles.slots[ret].used = true;
+	return ret;
+}
+
+void vm_handle_free(vm_t *vm, int handle) {
+	if (vm->handles.num_avail >= vm->handles.max_avail) {
+		// TODO: fatal error, should never happen
+		return;
+	}
+
+	if (handle < 0 || handle >= vm->handles.max_avail) {
+		// TODO: fatal error, invalid handle
+		return;
+	}
+
+	if (vm->handles.slots[handle].used == false) {
+		// TODO: fatal error, double free
+		return;
+	}
+
+	vm->handles.slots[handle].used = true;
+	vm->handles.avail[vm->handles.num_avail++] = handle;
+}
+
+bool vm_handle_valid(vm_t *vm, int handle) {
+	return handle >= 0
+		&& handle < vm->handles.max_avail
+		&& vm->handles.slots[handle].used;
+}
+
+scm_value_t vm_handle_get(vm_t *vm, int handle) {
+	if (vm_handle_valid(vm, handle)) {
+		return vm->handles.slots[handle].value;
+
+	} else {
+		// TODO: error? probably
+		return SCM_TYPE_NULL;
+	}
+}
+
+void vm_handle_set(vm_t *vm, int handle, scm_value_t value) {
+	if (vm_handle_valid(vm, handle)) {
+		vm->handles.slots[handle].value = value;
+
+	} else {
+		// TODO: error
+	}
+}
+
 vm_t *vm_init(void) {
 	vm_t *ret = calloc(1, sizeof(vm_t));
 	gc_init(&ret->gc, 0x8000);
+	vm_handles_init(&ret->handles, 0x1000);
 
 	//scm_closure_t *root_closure = calloc( 1, sizeof( scm_closure_t ));
 	root_closure = calloc(1, sizeof(scm_closure_t));
