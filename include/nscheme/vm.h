@@ -98,10 +98,6 @@ typedef struct scm_gc_context {
 	uint8_t *end;
 	// current end of the allocations in the heap
 	uint8_t *allocend;
-
-	// keeps track of whether the current marked bit is 1 or 0
-	// alternates each GC collection cycle
-	int current_mark;
 } vm_gc_context_t;
 
 typedef struct vm_handle {
