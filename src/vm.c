@@ -152,7 +152,7 @@ static inline void vm_handle_syntax_rules(vm_t *vm,
 	ret->keywords = is_null(pair->car)? NULL : get_pair(pair->car);
 
 	pair = get_pair(pair->cdr);
-	ret->patterns = get_pair(pair->car);
+	ret->patterns = pair;
 
 	vm_stack_push(vm, vm_func_return_last());
 	vm_stack_push(vm, tag_heap_type(ret, SCM_TYPE_SYNTAX_RULES));

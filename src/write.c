@@ -2,7 +2,7 @@
 #include <nscheme/write.h>
 #include <stdio.h>
 
-static inline void write_list(scm_pair_t *pair) {
+void write_list(scm_pair_t *pair) {
 	printf("(");
 
 	for (;;) {
