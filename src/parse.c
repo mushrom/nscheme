@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 /*
  * parser grammar overview:
@@ -110,8 +111,9 @@ static inline bool is_apostrophe(scm_value_t value) {
 }
 
 static inline bool is_period(scm_value_t value) {
-	return is_parse_val(value)
-	       && get_parse_val(value) == PARSE_TYPE_PERIOD;
+	return is_symbol(value)
+		&& strlen(get_symbol(value)) == 1
+		&& get_symbol(value)[0] == '.';
 }
 
 static inline bool is_none_type(scm_value_t value) {
