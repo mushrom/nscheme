@@ -221,7 +221,13 @@ static inline void vm_step_interpreter(vm_t *vm) {
 						vm_stack_push(vm, vm_func_return_last());
 						vm_stack_push(vm, SCM_TYPE_NULL);
 						vm->ptr = SCM_TYPE_NULL;
-						vm_call_eval(vm, expand_syntax_rules(vm, rules, pair));
+
+						scm_value_t values = expand_syntax_rules(vm, rules, pair);
+
+						vm_call_eval(vm, values);
+						// part of the eval call, essentially setting up the call frame as
+						// `(begin expanded-syntax)`
+						vm_stack_push(vm, vm_func_return_last());
 
 					} else {
 						vm_stack_push(vm, foo->value);

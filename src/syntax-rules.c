@@ -2,8 +2,19 @@
 #include <nscheme/vm_ops.h>
 #include <nscheme/write.h>
 
+#include <string.h>
+
 static inline scm_pair_t *next(scm_pair_t *pair) {
-    return is_pair(pair->cdr)? get_pair(pair->cdr) : NULL;
+    return (pair && is_pair(pair->cdr))? get_pair(pair->cdr) : NULL;
+}
+
+static inline
+bool is_ellipsis(scm_value_t value) {
+	if (!is_symbol(value))
+		return false;
+
+	const char *sym = get_symbol(value);
+	return strcmp(sym, "...") == 0;
 }
 
 bool symbol_in_list(scm_pair_t *keywords, const char *symbol) {
@@ -32,7 +43,16 @@ bool matches(scm_pair_t *keywords,
 	scm_pair_t *p_it = pattern;
 	scm_pair_t *e_it = expr;
 
-	for (; p_it && e_it; p_it = next(p_it), e_it = next(e_it)) {
+	for (; p_it; p_it = next(p_it), e_it = next(e_it)) {
+		if (next(p_it) && is_ellipsis(next(p_it)->car))
+			// always match, even if e_it is empty
+			return true;
+
+		if (!e_it)
+			// if the pattern isn't variable-length and the expression has reached
+			// the end, then it can't match
+			return false;
+
 		if (is_symbol(p_it->car)) {
 			const char *p_symbol = get_symbol(p_it->car);
 
@@ -48,7 +68,6 @@ bool matches(scm_pair_t *keywords,
 					return false;
 			}
 
-			// TODO: check for ellipsis
 			// otherwise, values match, expression value will be bound to pattern symbol
 
 		} else if (is_pair(p_it->car)) {
@@ -60,6 +79,10 @@ bool matches(scm_pair_t *keywords,
 
 			if (!matches(keywords, sub_pat, sub_exp))
 				return false;
+
+		} else if (p_it->car != e_it->car) {
+			// check for matching literals
+			return false;
 		}
 	}
 
@@ -71,6 +94,7 @@ struct binding {
 	const char *name;
 	scm_value_t value;
 	struct binding *next;
+	bool is_variable_length;
 };
 
 struct binding_list {
@@ -117,7 +141,7 @@ struct binding *find_binding(struct binding_list *list, const char *name) {
 	return 0;
 }
 
-// pattern is assumed to match the expression here
+// pattern is assumed to match the expression here, leaves out some error checking
 static inline
 void build_bindings(scm_pair_t *keywords,
                     scm_pair_t *pattern,
@@ -127,7 +151,25 @@ void build_bindings(scm_pair_t *keywords,
 	scm_pair_t *p_it = pattern;
 	scm_pair_t *e_it = expr;
 
-	for (; p_it && e_it; p_it = next(p_it), e_it = next(e_it)) {
+	for (; p_it; p_it = next(p_it), e_it = next(e_it)) {
+		if (next(p_it) && is_ellipsis(next(p_it)->car)) {
+			const char *p_symbol = get_symbol(p_it->car);
+			printf("Adding variable-length binding: '%s'\n", p_symbol);
+
+			struct binding *bind = make_binding();
+			bind->name  = p_symbol;
+			bind->value = e_it? tag_pair(e_it) : SCM_TYPE_NULL;
+			bind->is_variable_length = true;
+
+			add_binding(bindings, bind);
+
+			// there shouldn't be anything left to match in this list after the ellipsis
+			// TODO: wait, is that allowed?
+			return;
+		}
+
+		if (!e_it) return;
+
 		if (is_symbol(p_it->car)) {
 			const char *p_symbol = get_symbol(p_it->car);
 
@@ -141,8 +183,6 @@ void build_bindings(scm_pair_t *keywords,
 			bind->value = e_it->car;
 
 			add_binding(bindings, bind);
-
-			// TODO: handle ellipsis
 
 		} else if (is_pair(p_it->car)) {
 			scm_pair_t *sub_pat = get_pair(p_it->car);
@@ -167,20 +207,34 @@ scm_value_t expand(struct binding_list *bindings,
 
 		if (bind) {
 			retcar = bind->value;
+			if (bind->is_variable_length) {
+				printf("have variable-length symbol: '%s'\n", bind->name);
+				return bind->value;
+
+			} else {
+				retcar = bind->value;
+			}
 
 		} else {
 			// leave symbol in expansion to be evaluated at runtime
 			retcar = expansion->car;
 		}
-
-		// TODO: handle ellipsis
 	}
 
 	else if (is_pair(expansion->car)) {
 		retcar = expand(bindings, get_pair(expansion->car));
 	}
 
+	else {
+		// copy values of other types
+		retcar = expansion->car;
+	}
+
 	if (is_pair(expansion->cdr)) {
+		if (retcdr != SCM_TYPE_NULL) {
+			puts("detected values after expanding a variable-length match! need to check for this when defining syntax rules");
+		}
+
 		retcdr = expand(bindings, get_pair(expansion->cdr));
 	}
 
