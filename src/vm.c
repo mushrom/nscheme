@@ -299,6 +299,16 @@ void vm_error(vm_t *vm, const char *msg) {
 	//       information to the code
 }
 
+void vm_panic(vm_t *vm, const char *msg) {
+	vm->running = false;
+	vm->errormsg = msg;
+
+	// TODO: current line number, some way to attach other context
+	//       information to the code
+	fprintf(stderr, "Panic! Fatal error: %s\n", msg);
+	exit(EXIT_FAILURE);
+}
+
 void  vm_clear_error(vm_t *vm) {
 	vm->running = true;
 	vm->errormsg = NULL;

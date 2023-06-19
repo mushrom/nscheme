@@ -134,15 +134,6 @@ static inline scm_value_t tag_character(unsigned character) {
 	return (character << 8) | SCM_TYPE_CHAR;
 }
 
-static inline scm_value_t construct_pair(scm_value_t car, scm_value_t cdr) {
-	scm_pair_t *pair = calloc(1, sizeof(scm_pair_t));
-
-	pair->car = car;
-	pair->cdr = cdr;
-
-	return tag_pair(pair);
-}
-
 // type testing functions
 static inline bool is_integer(scm_value_t value) {
 	return (value & SCM_MASK_INTEGER) == SCM_TYPE_INTEGER;

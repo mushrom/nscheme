@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
 	vm_t *vm = vm_init();
 
 	if (argc == 1) {
-		foo = make_parse_state(stdin);
+		foo = make_parse_state(vm, stdin);
 		repl(vm, foo);
 
 	} else {
@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
 		for (; i < argc; i++) {
 			FILE *fp = fopen(argv[i], "r");
 
-			foo = make_parse_state(fp);
+			foo = make_parse_state(vm, fp);
 			evaluate_file(vm, foo);
 		}
 	}

@@ -1,4 +1,6 @@
 #include <nscheme/parse.h>
+#include <nscheme/vm.h>
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -129,9 +131,9 @@ scm_value_t parse_quoted(parse_state_t *state) {
 
 	parse_expect(state, is_apostrophe, "apostrophe");
 
-	return construct_pair(
+	return construct_pair(state->vm,
 	           quoted,
-	           construct_pair(
+	           construct_pair(state->vm,
 	               parse_expression(state),
 	               SCM_TYPE_NULL));
 }
@@ -173,7 +175,7 @@ scm_value_t parse_list_tokens(parse_state_t *state) {
 		return parse_pair_token(state);
 
 	} else if (!is_none_type(temp)) {
-		return construct_pair(temp, parse_list_tokens(state));
+		return construct_pair(state->vm, temp, parse_list_tokens(state));
 
 	} else {
 		return SCM_TYPE_NULL;
@@ -206,9 +208,10 @@ scm_value_t parse_expression(parse_state_t *state) {
 	}
 }
 
-parse_state_t *make_parse_state(FILE *fp) {
+parse_state_t *make_parse_state(vm_t *vm, FILE *fp) {
 	parse_state_t *ret = calloc(1, sizeof(parse_state_t));
 
+	ret->vm = vm;
 	ret->fp = fp;
 
 	return ret;

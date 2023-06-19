@@ -195,7 +195,8 @@ void build_bindings(scm_pair_t *keywords,
 
 // pattern is assumed to match the expression here
 static inline
-scm_value_t expand(struct binding_list *bindings,
+scm_value_t expand(vm_t *vm,
+                   struct binding_list *bindings,
                    scm_pair_t *expansion)
 {
 	scm_value_t retcar = SCM_TYPE_NULL;
@@ -222,7 +223,7 @@ scm_value_t expand(struct binding_list *bindings,
 	}
 
 	else if (is_pair(expansion->car)) {
-		retcar = expand(bindings, get_pair(expansion->car));
+		retcar = expand(vm, bindings, get_pair(expansion->car));
 	}
 
 	else {
@@ -235,12 +236,12 @@ scm_value_t expand(struct binding_list *bindings,
 			puts("detected values after expanding a variable-length match! need to check for this when defining syntax rules");
 		}
 
-		retcdr = expand(bindings, get_pair(expansion->cdr));
+		retcdr = expand(vm, bindings, get_pair(expansion->cdr));
 	}
 
 	// TODO: does this need to handle improper lists?
 
-	return construct_pair(retcar, retcdr);
+	return construct_pair(vm, retcar, retcdr);
 }
 
 scm_value_t expand_syntax_rules(vm_t *vm,
@@ -269,7 +270,7 @@ scm_value_t expand_syntax_rules(vm_t *vm,
 
 			struct binding_list *bindings = make_binding_list();
 			build_bindings(rules->keywords, pattern, expr, bindings);
-			ret = expand(bindings, expansion);
+			ret = expand(vm, bindings, expansion);
 			free_binding_list(bindings);
 
 			puts("expanded to:");

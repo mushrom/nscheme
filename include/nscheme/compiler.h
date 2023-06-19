@@ -55,6 +55,7 @@ typedef struct comp_state {
 	closure_node_t *closed_vars;
 	instr_node_t   *instrs;
 	instr_node_t   *last_instr;
+	vm_t           *vm;
 
 	unsigned stack_ptr;
 	unsigned closure_ptr;

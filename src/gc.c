@@ -1,6 +1,8 @@
 #include <nscheme/vm.h>
 #include <nscheme/values.h>
 
+#include <stdio.h>
+
 enum block_flags {
 	FLAG_MARKED = 1 << 0,
 	FLAG_GREY   = 1 << 1,
@@ -21,39 +23,57 @@ typedef struct scm_gc_block {
 void *vm_alloc(vm_t *vm, size_t n) {
 	void *ret = NULL;
 
+	//return calloc(1, n);
+
 	if ((ret = gc_alloc(&vm->gc, n)) == NULL) {
+		puts("Starting garbage collection...");
 		gc_collect_vm(&vm->gc, vm);
 
 		if ((ret = gc_alloc(&vm->gc, n)) == NULL) {
-			vm_error(vm, "allocation failure! heap is full (TODO: expand heap)");
+			vm_panic(vm, "allocation failure! heap is full (TODO: expand heap)");
+
+		} else {
+			puts("Allocated successfully?");
 		}
 	}
 
 	return ret;
 }
 
+size_t align_size(size_t size, size_t align) {
+	size_t off = size % align;
+	return size + (off > 0)*(align - off);
+}
+
+void *align_ptr(void *ptr, size_t align) {
+	uintptr_t temp = (uintptr_t)ptr;
+	size_t off = temp % align;
+	return (void *)(temp + (off > 0)*(align - off));
+}
+
 void gc_init(vm_gc_context_t *gc, size_t initial_size) {
-	// TODO: need to make sure pointers are aligned to 16
 	gc->base         = malloc(initial_size);
 	gc->end          = gc->base + initial_size;
-	gc->allocend     = gc->base;
+	gc->allocend     = align_ptr(gc->base, 16);
+
+	printf("%p, %p\n", gc->base, gc->allocend);
 }
 
 void *gc_alloc(vm_gc_context_t *gc, size_t n) {
-	size_t required = n + sizeof(scm_gc_block_t);
+	// adjust offset of GC block so that the end of the block has 16 byte alignment
+	uint8_t *block_end = align_ptr(gc->allocend + sizeof(scm_gc_block_t), 16);
 
-	if (gc->allocend + required >= gc->end) {
+	if (block_end + n >= gc->end) {
 		// allocation failure, need to run the collector 
 		return NULL;
 	}
 
-	scm_gc_block_t *ret = (void*)gc->allocend;
-	gc->allocend += required;
-	// unmarked by default
-	ret->flags = 0;
+	gc->allocend = block_end + n;
+	scm_gc_block_t *block = (void*)(block_end - sizeof(scm_gc_block_t));
+	block->flags = 0; // unmarked by default
+	block->size  = n;
 
-	// TODO: need to make sure pointers are aligned to 16
-	return (uint8_t*)ret + sizeof(scm_gc_block_t);
+	return block_end;
 }
 
 static inline bool is_heap_type(scm_value_t val) {
@@ -73,17 +93,18 @@ scm_gc_block_t *gc_get_block(void *ptr) {
 }
 
 static inline
-void gc_mark_value(vm_gc_context_t *gc, scm_value_t val) {
-	uint8_t *ptr = get_heap_tagged_value(val);
-	scm_gc_block_t *blk = gc_get_block(ptr);
-	blk->flags |= FLAG_MARKED;
-}
-
-static inline
 void gc_mark_pointer(vm_gc_context_t *gc, void *ptr) {
 	if (is_gc_ptr(gc, ptr)) {
 		scm_gc_block_t *blk = gc_get_block(ptr);
 		blk->flags |= FLAG_MARKED;
+	}
+}
+
+static inline
+void gc_mark_value(vm_gc_context_t *gc, scm_value_t val) {
+	if (is_heap_type(val)) {
+		gc_mark_pointer(gc, get_heap_tagged_value(val));
+		printf("marking value: %lx\n", val);
 	}
 }
 
@@ -186,6 +207,7 @@ static void mark_closure(vm_gc_context_t *gc, scm_closure_t *clsr) {
 
 static void mark_env_node(vm_gc_context_t *gc, env_node_t *node) {
 	if (node && is_unmarked_ptr(node)) {
+		puts("huh?");
 		gc_mark_pointer(gc, node);
 		mark_traverse(gc, node->key);
 		mark_traverse(gc, node->value);
@@ -204,24 +226,27 @@ static void mark_environment(vm_gc_context_t *gc, environment_t *env) {
 }
 
 static void mark_vm(vm_gc_context_t *gc, vm_t *vm) {
+	printf("got here too? %u, %u\n", vm->sp, vm->callp);
 	for (unsigned i = 0; i < vm->sp; i++) {
 		mark_traverse(gc, vm->stack[i]);
+		printf("asdf: %u\n", i);
 	}
 
 	for (unsigned i = 0; i < vm->callp; i++) {
 		if (vm->calls[i].runmode == false /* TODO: 'INTERPRETED' constant */) {
 			mark_traverse(gc, vm->calls[i].ptr);
-			mark_environment(gc, vm->env);
 			// TODO: mark environment
 		}
 
 		mark_closure(gc, vm->calls[i].closure);
 	}
 
+	mark_environment(gc, vm->env);
 	mark_traverse(gc, vm->ptr);
 }
 
 size_t gc_collect_vm(vm_gc_context_t *gc, vm_t *vm) {
+	puts("got here");
 	mark_vm(gc, vm);
 	return 0;
 }

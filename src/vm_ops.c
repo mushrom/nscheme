@@ -312,7 +312,7 @@ bool vm_op_cons(vm_t *vm, uintptr_t arg) {
 	scm_value_t car = vm_stack_pop(vm);
 
 	vm_stack_pop(vm);
-	vm_stack_push(vm, construct_pair(car, cdr));
+	vm_stack_push(vm, construct_pair(vm, car, cdr));
 
 	return true;
 }
@@ -522,7 +522,7 @@ bool vm_op_newline(vm_t *vm, uintptr_t arg) {
 }
 
 bool vm_op_read(vm_t *vm, uintptr_t arg) {
-	parse_state_t *input = make_parse_state(stdin);
+	parse_state_t *input = make_parse_state(vm, stdin);
 	scm_value_t value = parse_expression(input);
 
 	vm_stack_pop(vm);

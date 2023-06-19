@@ -264,7 +264,8 @@ static inline void store_closed_vars(comp_state_t *state,
 {
 	DEBUG_PRINTF("    | - closure ptr: %u\n", state->closure_ptr);
 
-	closure->closures = calloc(1, sizeof(env_node_t *[state->closure_ptr]));
+	//closure->closures = calloc(1, sizeof(env_node_t *[state->closure_ptr]));
+	closure->closures = vm_alloc(state->vm, sizeof(env_node_t *[state->closure_ptr]));
 
 	closure_node_t *temp = state->closed_vars;
 	unsigned i = state->closure_ptr - 1;
@@ -385,6 +386,7 @@ scm_closure_t *vm_compile_closure(vm_t *vm, scm_closure_t *closure) {
 	state.env = closure->env;
 	state.closed_vars = NULL;
 	state.stack_ptr = list_length(closure->args) + 1;
+	state.vm = vm;
 
 	comp_node_t *values = wrap_comp_values(closure->definition);
 

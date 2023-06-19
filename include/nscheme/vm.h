@@ -148,6 +148,7 @@ vm_t *vm_init(void);
 void  vm_free(vm_t *vm);
 void  vm_run(vm_t *vm);
 void  vm_error(vm_t *vm, const char *msg);
+void  vm_panic(vm_t *vm, const char *msg);
 void  vm_clear_error(vm_t *vm);
 
 void  *vm_alloc(vm_t *vm, size_t n);
@@ -163,5 +164,14 @@ scm_value_t vm_handle_get(vm_t *vm, int handle);
 void        vm_handle_set(vm_t *vm, int handle, scm_value_t);
 
 scm_value_t vm_evaluate_expr(vm_t *vm, scm_value_t expr);
+
+static inline scm_value_t construct_pair(vm_t *vm, scm_value_t car, scm_value_t cdr) {
+	scm_pair_t *pair = vm_alloc(vm, sizeof(scm_pair_t));
+
+	pair->car = car;
+	pair->cdr = cdr;
+
+	return tag_pair(pair);
+}
 
 #endif
